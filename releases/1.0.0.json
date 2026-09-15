@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "component": "fqgate",
+  "channel": "stable",
+  "status": "unpublished",
+  "version": "1.0.0",
+  "publishedAt": null,
+  "minimumSupportedVersion": "0.1.0",
+  "releaseNotes": [
+    "FQGate 1.0.0：专注为 AI 工具提供本机行情数据，本版不再提供交易 API 和交易 MCP 工具。",
+    "支持普通行情、历史行情、资讯、选股和 Level-2；Level-2 仍需同花顺账号及相应权限。",
+    "本机快捷登录只需提供同花顺安装路径；重启后按需自动恢复已保存的行情登录状态。",
+    "补充短线精灵等行情字段说明，优化实时订阅、连接诊断和敏感信息保护。",
+    "主界面可查看已安装的 MCP Apps 及版本，应用页面独立更新。"
+  ],
+  "packages": [
+    {
+      "platform": "windows",
+      "architecture": "x86_64",
+      "installMode": "replaceExecutable",
+      "fileName": "FQGate-1.0.0-windows-x64-UNSIGNED.exe",
+      "size": 22921728,
+      "sha256": "d2227dcf0c48f0bc428e3bfece444ba52a6938981d1ba143489be46a6add33c8"
+    },
+    {
+      "platform": "macos",
+      "architecture": "aarch64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.0-macos-arm64-ADHOC.zip",
+      "size": 7430071,
+      "sha256": "f5ee6987a5ffafa20828ba4d2e6dfdaf02037888f3edca28de5da0cc37c351bf"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x86_64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.0-macos-x86_64-ADHOC.zip",
+      "size": 8004707,
+      "sha256": "c3d83f595cd3de89560b20e9e96d4a36e94c3a8d8a7422652483c07b1d2594aa"
+    }
+  ]
+}
