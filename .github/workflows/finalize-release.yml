@@ -21,6 +21,9 @@ jobs:
   validate:
     name: 校验全部发行资产
     runs-on: ubuntu-24.04
+    # GitHub 只有具备发行写权限的身份才能读取尚未公开的 Release 草稿。
+    permissions:
+      contents: write
     env:
       RELEASE_VERSION: ${{ github.event.client_payload.version || inputs.version }}
       GITHUB_TOKEN: ${{ github.token }}
