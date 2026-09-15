@@ -67,11 +67,11 @@ class GitHubApi:
     def download_asset(self, asset: dict) -> bytes:
         return self.request("GET", asset["url"], accept="application/octet-stream")
 
-    def publish_release(self, repository: str, release_id: int, body: str):
+    def publish_release(self, repository: str, release_id: int, body: str, tag: str):
         return self.request(
             "PATCH",
             f"/repos/{repository}/releases/{release_id}",
-            {"body": body, "draft": False, "prerelease": False, "make_latest": "true"},
+            {"tag_name": tag, "body": body, "draft": False, "prerelease": False, "make_latest": "true"},
         )
 
 
@@ -302,7 +302,7 @@ def publish_candidate(api, candidate: dict) -> dict:
         raise ValueError("待发布 Release 身份已经变化")
     if release.get("draft"):
         release = api.publish_release(
-            candidate["repository"], release["id"], release_body(candidate["manifest"], candidate["source"])
+            candidate["repository"], release["id"], release_body(candidate["manifest"], candidate["source"]), candidate["tag"]
         )
     published_at = release.get("published_at")
     if release.get("draft") or not published_at:
