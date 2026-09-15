@@ -8,3 +8,6 @@
 *.zip
 __pycache__/
 *.py[cod]
+.venv-benchmark/
+benchmark-results/
+.benchmark-inspect-*/

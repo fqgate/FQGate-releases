@@ -1,0 +1,5 @@
+# 固定直接依赖版本，报告仍会记录实际安装版本，便于复核结果。
+akshare==1.18.94
+easyquotation==0.7.7
+mootdx==0.11.7; platform_system != "Darwin" or platform_machine == "x86_64"
+tushare==1.4.29
