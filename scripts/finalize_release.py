@@ -126,8 +126,13 @@ def validate_request(request: dict, version: str) -> None:
 
 
 def validate_platform_metadata(metadata: dict, version: str) -> tuple[tuple[str, str, str], dict, list[dict]]:
-    if set(metadata) != {"schemaVersion", "component", "version", "tag", "package", "assets"}:
+    if set(metadata) - {"buildId"} != {"schemaVersion", "component", "version", "tag", "package", "assets"}:
         raise ValueError("平台元数据字段不符合约定")
+    if "buildId" in metadata and (
+        not isinstance(metadata["buildId"], str)
+        or not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", metadata["buildId"])
+    ):
+        raise ValueError("平台元数据构建编号无效")
     if metadata["schemaVersion"] != 1 or metadata["component"] != "fqgate":
         raise ValueError("平台元数据组件无效")
     if metadata["version"] != version or metadata["tag"] != f"fqgate-v{version}":

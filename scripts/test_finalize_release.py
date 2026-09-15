@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from finalize_release import build_candidate, promote_manifest
+from finalize_release import build_candidate, promote_manifest, validate_platform_metadata
 
 
 def encoded(value):
@@ -111,6 +111,18 @@ class FinalizeReleaseTests(unittest.TestCase):
         api.release["assets"].append({"name": "extra.txt", "size": 1, "url": "unused"})
         with self.assertRaisesRegex(ValueError, "多余"):
             build_candidate(api, "zhuyifang/fqgate-releases", "1.2.3")
+
+    def test_accepts_current_build_id_metadata(self):
+        api = self.create_release()
+        for name, content in api.contents.items():
+            if not name.endswith(".release.json"):
+                continue
+            metadata = json.loads(content)
+            metadata["buildId"] = "20260915T000000Z"
+            validate_platform_metadata(metadata, "1.2.3")
+            metadata["buildId"] = "invalid/build"
+            with self.assertRaisesRegex(ValueError, "构建编号无效"):
+                validate_platform_metadata(metadata, "1.2.3")
 
     def test_promote_updates_stable_manifest_and_readme(self):
         with tempfile.TemporaryDirectory() as directory:
