@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.0",
-  "publishedAt": null,
+  "publishedAt": "2026-09-15T00:57:24Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "FQGate 1.0.0：专注为 AI 工具提供本机行情数据，本版不再提供交易 API 和交易 MCP 工具。",
