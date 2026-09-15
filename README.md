@@ -1,27 +1,27 @@
-# FQGate：同花顺 MCP 服务与本地量化交易网关（QQ群：14546787）
+# FQGate：同花顺 MCP 服务与本地行情数据网关（QQ群：14546787）
 
-FQGate（Fast Quant Gateway）是一款免费的 Windows 本地量化交易网关，也是一套面向 AI Agent 的同花顺 MCP 服务与交易 API。它可以把 A 股行情和券商交易能力连接给 Codex、Claude Code、WorkBuddy、豆包、千问等 AI 工具，让 AI 助手查询行情与账户数据；在你主动开启相应权限后，也可以使用委托下单、撤单和资金划转等功能。
+FQGate（Fast Quant Gateway）是一款免费的 Windows、macOS 本地行情数据网关。它把同花顺行情连接给 Codex、Claude Code、WorkBuddy、豆包、千问等 AI 工具，让你在对话中查询行情、K 线、资讯和量化数据。
 
-> Tonghuashun (THS) market data MCP server and local quantitative trading API gateway for AI agents.
+> Tonghuashun (THS) market data MCP server and local market data API gateway for AI agents.
 
-FQGate 不需要 AI 模拟鼠标点击交易窗口，也不依赖截图或文字识别读取结果。程序只在本机提供服务，并复用已经建立的登录和连接，适合个人量化研究、AI 股票工具、A 股数据查询和交易接口接入。
+**1.0.0 升级提醒：** 从本版开始，FQGate 专注行情，不再提供券商登录、交易账户查询、下单、撤单或资金划转的 API 和 MCP 工具。需要交易的用户，请通过券商客户端办理。
+
+FQGate 不需要 AI 模拟鼠标点击，也不依赖截图或文字识别读取结果。程序只在本机提供服务，并复用已经建立的登录和连接，适合个人量化研究、AI 股票工具和 A 股数据查询。
 
 ## FQGate 能做什么
 
 | 功能 | 你可以使用的能力 |
 | --- | --- |
 | 行情数据 | 证券搜索、实时行情、历史行情、分时、K 线、盘口、板块、资讯、选股、期权和 Level-2 数据 |
-| 账户查询 | 查询交易账户、资产、持仓、委托、成交、资金流水和交割单 |
-| 委托下单 | 下单、撤单和新股申购；必须由你在主界面主动开启 |
-| 资金划转 | 银证转账和担保品划转；必须由你在主界面主动开启 |
-| 桌面通知 | 委托被券商受理或出现新增成交时发送通知 |
+| 登录恢复 | 按需恢复已保存的同花顺账号或游客行情身份 |
+| MCP Apps | 查看已安装的行情界面及版本，界面可独立更新 |
 | AI 接入 | 提供标准 MCP、豆包兼容方式和 HTTP API，可由多个本机 AI 工具共用 |
 
-普通行情在没有登录同花顺账号时可以自动使用游客行情。问财基础查询需要登录同花顺账号；Level-2 行情还要求账号已经开通相应权限。证券交易使用独立的券商账户，不与同花顺行情账号混用。
+普通行情在没有登录同花顺账号时可以自动使用游客行情。问财基础查询需要登录同花顺账号；Level-2 行情还要求账号已经开通相应权限。游客行情的数据可能延迟或受限。
 
 ## 支持哪些 AI 工具
 
-配套的开源 Agent 插件目前面向 Codex、Claude Code、WorkBuddy、豆包、千问、OpenClaw、ZCode 和 DeepSeek Harness。插件负责安装引导、AI 使用说明和对话中的交互界面，FQGate 负责你电脑上的行情、账户与交易服务。
+配套的开源 Agent 插件目前面向 Codex、Claude Code、WorkBuddy、豆包、千问、OpenClaw、ZCode 和 DeepSeek Harness。插件负责安装引导、AI 使用说明和对话中的交互界面，FQGate 负责你电脑上的行情服务。请将插件一起更新到 1.0.0，以采用不限制主程序高版本的兼容规则。
 
 - 国内访问：[Gitee - tonghuasun-agent](https://gitee.com/qicuo/tonghuasun-agent)
 - GitHub：[zhuyifang/tonghuasun-agent](https://github.com/zhuyifang/tonghuasun-agent)
@@ -44,8 +44,8 @@ FQGate 主程序免费使用；配套 Agent 插件公开源代码。FQGate 主�
 
 1. 下载并解压 Windows 安装包，运行 `FQGate.exe`。
 2. 首次启动时阅读并确认风险声明。
-3. 根据需要开启账户查询、委托下单、资金划转或桌面通知。
-4. 打开上方的 Agent 插件项目，按照对应 AI 工具的说明完成连接。
+3. 为 FQGate 创建桌面快捷方式，方便以后启动；需要完整行情权限时登录同花顺账号。
+4. 打开上方的 Agent 插件项目，按照对应 AI 工具的说明完成连接。FQGate 已启动、AI 工具中的 `fqgate` 连接成功，并且能够读取工具列表或完成健康检查，才算安装成功。
 
 FQGate 默认只监听本机地址，不会把服务直接开放到公网。程序重新启动后会优先恢复之前成功使用的同花顺账号或游客行情身份，凭证失效时才会重新登录或自动轮换游客账号。
 
