@@ -48,7 +48,6 @@ jobs:
     name: 公开 Release 并切换稳定通道
     needs: validate
     runs-on: ubuntu-24.04
-    environment: fqgate-production
     permissions:
       contents: write
     env:
