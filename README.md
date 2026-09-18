@@ -55,10 +55,10 @@ FQGate 默认只监听本机地址，不会把服务直接开放到公网。程�
 - 微信群：使用微信扫描下方二维码，加入“同花顺 AI Agent 插件交流”群。
 
 <p align="center">
-  <img src="./assets/wechat-group.jpg" alt="同花顺 MCP、FQGate 和 AI 量化交易插件微信群二维码" width="260">
+  <img src="./assets/wechat-group.png" alt="同花顺 AI Agent 插件交流群二维码，有效期至 2026 年 9 月 25 日" width="260">
 </p>
 
-当前微信群二维码有效期至 2026 年 9 月 24 日。如果二维码已经失效，可以先加入 QQ 群，或到 Agent 插件项目提交 Issue 提醒更新。
+当前微信群二维码有效期至 2026 年 9 月 25 日。如果二维码已经失效，可以先加入 QQ 群，或到 Agent 插件项目提交 Issue 提醒更新。
 
 ## 支持项目
 
