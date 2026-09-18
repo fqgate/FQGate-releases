@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.1",
-  "publishedAt": null,
+  "publishedAt": "2026-09-18T05:45:00Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "修复按日期查询分钟 K 线时的时间边界转换。",
