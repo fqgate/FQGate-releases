@@ -30,11 +30,11 @@ FQGate 主程序免费使用；配套 Agent 插件公开源代码。FQGate 主�
 
 ## 下载 FQGate
 
-当前正式版是 [FQGate v1.0.1](https://github.com/zhuyifang/fqgate-releases/releases/tag/fqgate-v1.0.1)。
+当前正式版是 [FQGate v1.0.2](https://github.com/zhuyifang/fqgate-releases/releases/tag/fqgate-v1.0.2)。
 
-- Windows 电脑下载 `FQGate-1.0.1-windows-x64-UNSIGNED.zip`，解压后运行 `FQGate.exe`；也可以直接下载单文件 EXE。
-- Apple 芯片 Mac 下载 `FQGate-1.0.1-macos-arm64-ADHOC.zip`。
-- Intel 芯片 Mac 下载 `FQGate-1.0.1-macos-x86_64-ADHOC.zip`。
+- Windows 电脑下载 `FQGate-1.0.2-windows-x64-UNSIGNED.zip`，解压后运行 `FQGate.exe`；也可以直接下载单文件 EXE。
+- Apple 芯片 Mac 下载 `FQGate-1.0.2-macos-arm64-ADHOC.zip`。
+- Intel 芯片 Mac 下载 `FQGate-1.0.2-macos-x86_64-ADHOC.zip`。
 
 文件名、大小和 SHA-256 可以在 [稳定版清单](./releases/stable.json)中查看。安装完成后，为 FQGate 创建一个桌面快捷方式，方便以后启动。
 

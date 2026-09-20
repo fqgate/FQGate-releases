@@ -3,39 +3,38 @@
   "component": "fqgate",
   "channel": "stable",
   "status": "published",
-  "version": "1.0.1",
-  "publishedAt": "2026-09-18T05:45:00Z",
+  "version": "1.0.2",
+  "publishedAt": "2026-09-20T18:26:46Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
-    "修复按日期查询分钟 K 线时的时间边界转换。",
-    "优化历史分时查询，避免重复请求拖慢行情响应。",
-    "修复沪深、港股、指数和其他父市场的行情线路选择与回退。",
-    "完善行情路由诊断、连接复用和返回数据校验。"
+    "修复按交易日查询历史集合竞价，正确传递交易日与开盘竞价时间边界。",
+    "修复单证券大单资金流推送在服务端缺少身份索引时无法归属的问题。",
+    "新增委托队列结构化字段，返回 sourceValue、volume、isBid 和可选 time。"
   ],
   "packages": [
     {
       "platform": "windows",
       "architecture": "x86_64",
       "installMode": "replaceExecutable",
-      "fileName": "FQGate-1.0.1-windows-x64-UNSIGNED.exe",
-      "size": 23023104,
-      "sha256": "63b05cc2bfbb0aab3413e85181f524a4d32b05fec2b3bd5e913578bb6b20eb01"
+      "fileName": "FQGate-1.0.2-windows-x64-UNSIGNED.exe",
+      "size": 23065088,
+      "sha256": "024bf1a395977856e70d7b03a3d6616620f82dfbf4872ca710a70b138ae47bc2"
     },
     {
       "platform": "macos",
       "architecture": "aarch64",
       "installMode": "openPackage",
-      "fileName": "FQGate-1.0.1-macos-arm64-ADHOC.zip",
-      "size": 7457102,
-      "sha256": "fecd01d795fbec15da46d118b6ca29c171d0e9bb3a28c0f3d564f8f4d4575d99"
+      "fileName": "FQGate-1.0.2-macos-arm64-ADHOC.zip",
+      "size": 7467396,
+      "sha256": "f70a00084f3eccc6f377a8c90609adcf344e2302b4316371e154723578b7a7d9"
     },
     {
       "platform": "macos",
       "architecture": "x86_64",
       "installMode": "openPackage",
-      "fileName": "FQGate-1.0.1-macos-x86_64-ADHOC.zip",
-      "size": 8039451,
-      "sha256": "01dd64f9dc39e295eefc260e6737642e210c9d2bbff770a97ae298e772c2dd31"
+      "fileName": "FQGate-1.0.2-macos-x86_64-ADHOC.zip",
+      "size": 8056812,
+      "sha256": "11041d4da98a9649e8e005ed58ad83a015ed73b7e62be97df31d288e9f6ff6b0"
     }
   ]
 }

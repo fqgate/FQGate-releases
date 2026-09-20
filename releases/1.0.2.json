@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.2",
-  "publishedAt": null,
+  "publishedAt": "2026-09-20T18:26:46Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "修复按交易日查询历史集合竞价，正确传递交易日与开盘竞价时间边界。",
