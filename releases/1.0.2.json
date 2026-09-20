@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "component": "fqgate",
+  "channel": "stable",
+  "status": "unpublished",
+  "version": "1.0.2",
+  "publishedAt": null,
+  "minimumSupportedVersion": "0.1.0",
+  "releaseNotes": [
+    "修复按交易日查询历史集合竞价，正确传递交易日与开盘竞价时间边界。",
+    "修复单证券大单资金流推送在服务端缺少身份索引时无法归属的问题。",
+    "新增委托队列结构化字段，返回 sourceValue、volume、isBid 和可选 time。"
+  ],
+  "packages": [
+    {
+      "platform": "windows",
+      "architecture": "x86_64",
+      "installMode": "replaceExecutable",
+      "fileName": "FQGate-1.0.2-windows-x64-UNSIGNED.exe",
+      "size": 23065088,
+      "sha256": "024bf1a395977856e70d7b03a3d6616620f82dfbf4872ca710a70b138ae47bc2"
+    },
+    {
+      "platform": "macos",
+      "architecture": "aarch64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.2-macos-arm64-ADHOC.zip",
+      "size": 7467396,
+      "sha256": "f70a00084f3eccc6f377a8c90609adcf344e2302b4316371e154723578b7a7d9"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x86_64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.2-macos-x86_64-ADHOC.zip",
+      "size": 8056812,
+      "sha256": "11041d4da98a9649e8e005ed58ad83a015ed73b7e62be97df31d288e9f6ff6b0"
+    }
+  ]
+}
