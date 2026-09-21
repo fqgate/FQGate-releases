@@ -20,6 +20,10 @@ EXPECTED_TARGETS = {
     ("macos", "x86_64", "openPackage"),
 }
 FORBIDDEN_NAME_PATTERN = re.compile(r"(?:TEST|DEBUG)", re.IGNORECASE)
+CURRENT_SOURCE_REPOSITORY = "fqgate/FQGate"
+LEGACY_SOURCE_REPOSITORIES = frozenset({"zhuyifang/fqgate"})
+ALLOWED_SOURCE_REPOSITORIES = frozenset({CURRENT_SOURCE_REPOSITORY, *LEGACY_SOURCE_REPOSITORIES})
+DEFAULT_RELEASE_REPOSITORY = "fqgate/FQGate-releases"
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
@@ -113,7 +117,9 @@ def validate_request(request: dict, version: str) -> None:
     source = request.get("source")
     if not isinstance(source, dict) or set(source) != {"repository", "commit"}:
         raise ValueError("发行请求缺少源码身份")
-    if source["repository"] != "zhuyifang/fqgate" or not re.fullmatch(r"[0-9a-f]{40}", source["commit"]):
+    if source["repository"] not in ALLOWED_SOURCE_REPOSITORIES or not re.fullmatch(
+        r"[0-9a-f]{40}", source["commit"]
+    ):
         raise ValueError("发行请求源码身份无效")
     minimum = str(request["minimumSupportedVersion"])
     if parse_version(minimum) > parse_version(version):
@@ -322,7 +328,7 @@ def render_download_section(manifest: dict) -> str:
     intel = packages[("macos", "x86_64")]["fileName"]
     return f"""## 下载 FQGate
 
-当前正式版是 [FQGate v{version}](https://github.com/zhuyifang/fqgate-releases/releases/tag/fqgate-v{version})。
+当前正式版是 [FQGate v{version}](https://github.com/fqgate/FQGate-releases/releases/tag/fqgate-v{version})。
 
 - Windows 电脑下载 `{windows_zip}`，解压后运行 `FQGate.exe`；也可以直接下载单文件 EXE。
 - Apple 芯片 Mac 下载 `{arm}`。
@@ -368,7 +374,9 @@ def main(argv=None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate_parser = subparsers.add_parser("validate")
-    validate_parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY", "zhuyifang/fqgate-releases"))
+    validate_parser.add_argument(
+        "--repository", default=os.environ.get("GITHUB_REPOSITORY", DEFAULT_RELEASE_REPOSITORY)
+    )
     validate_parser.add_argument("--version", required=True)
     validate_parser.add_argument("--output", type=Path, required=True)
 

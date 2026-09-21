@@ -4,7 +4,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from finalize_release import build_candidate, promote_manifest, validate_platform_metadata
+from finalize_release import (
+    CURRENT_SOURCE_REPOSITORY,
+    DEFAULT_RELEASE_REPOSITORY,
+    build_candidate,
+    promote_manifest,
+    validate_platform_metadata,
+)
 
 
 def encoded(value):
@@ -24,7 +30,7 @@ class FakeApi:
 
 
 class FinalizeReleaseTests(unittest.TestCase):
-    def create_release(self, version="1.2.3"):
+    def create_release(self, version="1.2.3", source_repository=CURRENT_SOURCE_REPOSITORY):
         contents = {}
         metadata_names = []
         definitions = [
@@ -75,7 +81,7 @@ class FinalizeReleaseTests(unittest.TestCase):
                 "component": "fqgate-release-request",
                 "version": version,
                 "tag": f"fqgate-v{version}",
-                "source": {"repository": "zhuyifang/fqgate", "commit": "a" * 40},
+                "source": {"repository": source_repository, "commit": "a" * 40},
                 "minimumSupportedVersion": "1.0.0",
                 "releaseNotes": ["修复问题"],
             }
@@ -102,7 +108,7 @@ class FinalizeReleaseTests(unittest.TestCase):
         return FakeApi(release, contents)
 
     def test_candidate_validates_all_release_assets(self):
-        candidate = build_candidate(self.create_release(), "zhuyifang/fqgate-releases", "1.2.3")
+        candidate = build_candidate(self.create_release(), DEFAULT_RELEASE_REPOSITORY, "1.2.3")
         self.assertEqual(candidate["manifest"]["status"], "unpublished")
         self.assertEqual(len(candidate["manifest"]["packages"]), 3)
 
@@ -110,7 +116,23 @@ class FinalizeReleaseTests(unittest.TestCase):
         api = self.create_release()
         api.release["assets"].append({"name": "extra.txt", "size": 1, "url": "unused"})
         with self.assertRaisesRegex(ValueError, "多余"):
-            build_candidate(api, "zhuyifang/fqgate-releases", "1.2.3")
+            build_candidate(api, DEFAULT_RELEASE_REPOSITORY, "1.2.3")
+
+    def test_candidate_accepts_legacy_source_repository(self):
+        candidate = build_candidate(
+            self.create_release(source_repository="zhuyifang/fqgate"),
+            DEFAULT_RELEASE_REPOSITORY,
+            "1.2.3",
+        )
+        self.assertEqual(candidate["source"]["repository"], "zhuyifang/fqgate")
+
+    def test_candidate_rejects_unknown_source_repository(self):
+        with self.assertRaisesRegex(ValueError, "源码身份无效"):
+            build_candidate(
+                self.create_release(source_repository="example/FQGate"),
+                DEFAULT_RELEASE_REPOSITORY,
+                "1.2.3",
+            )
 
     def test_accepts_current_build_id_metadata(self):
         api = self.create_release()
@@ -132,7 +154,7 @@ class FinalizeReleaseTests(unittest.TestCase):
             (root / "README.md").write_text(
                 "标题\n\n## 下载 FQGate\n\n旧内容\n\n## 使用方法\n\n正文\n", encoding="utf-8"
             )
-            manifest = build_candidate(self.create_release(), "zhuyifang/fqgate-releases", "1.2.3")["manifest"]
+            manifest = build_candidate(self.create_release(), DEFAULT_RELEASE_REPOSITORY, "1.2.3")["manifest"]
             manifest.update({"status": "published", "publishedAt": "2026-01-02T03:04:05Z"})
             promote_manifest(manifest, root)
             stable = json.loads((root / "releases" / "stable.json").read_text(encoding="utf-8"))

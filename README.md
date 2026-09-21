@@ -24,13 +24,13 @@ FQGate 不需要 AI 模拟鼠标点击，也不依赖截图或文字识别读取
 配套的开源 Agent 插件目前面向 Codex、Claude Code、WorkBuddy、豆包、千问、OpenClaw、ZCode 和 DeepSeek Harness。插件负责安装引导、AI 使用说明和对话中的交互界面，FQGate 负责你电脑上的行情服务。请将插件一起更新到 1.0.0，以采用不限制主程序高版本的兼容规则。
 
 - 国内访问：[Gitee - tonghuasun-agent](https://gitee.com/qicuo/tonghuasun-agent)
-- GitHub：[zhuyifang/tonghuasun-agent](https://github.com/zhuyifang/tonghuasun-agent)
+- GitHub：[fqgate/FQGate-agent](https://github.com/fqgate/FQGate-agent)
 
 FQGate 主程序免费使用；配套 Agent 插件公开源代码。FQGate 主程序源码不在本仓库公开，本仓库只提供官方下载、版本信息和使用说明。
 
 ## 下载 FQGate
 
-当前正式版是 [FQGate v1.0.2](https://github.com/zhuyifang/fqgate-releases/releases/tag/fqgate-v1.0.2)。
+当前正式版是 [FQGate v1.0.2](https://github.com/fqgate/FQGate-releases/releases/tag/fqgate-v1.0.2)。
 
 - Windows 电脑下载 `FQGate-1.0.2-windows-x64-UNSIGNED.zip`，解压后运行 `FQGate.exe`；也可以直接下载单文件 EXE。
 - Apple 芯片 Mac 下载 `FQGate-1.0.2-macos-arm64-ADHOC.zip`。
@@ -74,7 +74,7 @@ FQGate 默认只监听本机地址，不会把服务直接开放到公网。程�
 
 当前提供 Windows x64、Apple 芯片 Mac 和 Intel 芯片 Mac 三种下载包。Windows 包未签名，macOS 包采用 ad-hoc 签名，首次运行时请按系统提示确认。
 
-使用或更新 FQGate 时遇到问题，可以在本仓库提交 Issue；安装或使用 AI 插件时遇到问题，可以到 [tonghuasun-agent](https://github.com/zhuyifang/tonghuasun-agent/issues) 项目反馈。
+使用或更新 FQGate 时遇到问题，可以在本仓库提交 Issue；安装或使用 AI 插件时遇到问题，可以到 [FQGate-agent](https://github.com/fqgate/FQGate-agent/issues) 项目反馈。
 
 ## 安全与责任说明
 
