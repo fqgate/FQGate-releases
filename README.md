@@ -55,10 +55,10 @@ FQGate 默认只监听本机地址，不会把服务直接开放到公网。程�
 - 微信群：使用微信扫描下方二维码，加入“同花顺 AI Agent 插件交流”群。
 
 <p align="center">
-  <img src="./assets/wechat-group.jpg" alt="同花顺 MCP、FQGate 和 AI 量化交易插件微信群二维码" width="260">
+  <img src="./assets/wechat-group.png" alt="同花顺 AI Agent 插件交流群二维码，有效期至 2026 年 9 月 25 日" width="260">
 </p>
 
-当前微信群二维码有效期至 2026 年 9 月 17 日。如果二维码已经失效，可以先加入 QQ 群，或到 Agent 插件项目提交 Issue 提醒更新。
+当前微信群二维码有效期至 2026 年 9 月 25 日。如果二维码已经失效，可以先加入 QQ 群，或到 Agent 插件项目提交 Issue 提醒更新。
 
 ## 支持项目
 
@@ -75,6 +75,12 @@ FQGate 默认只监听本机地址，不会把服务直接开放到公网。程�
 当前提供 Windows x64、Apple 芯片 Mac 和 Intel 芯片 Mac 三种下载包。Windows 包未签名，macOS 包采用 ad-hoc 签名，首次运行时请按系统提示确认。
 
 使用或更新 FQGate 时遇到问题，可以在本仓库提交 Issue；安装或使用 AI 插件时遇到问题，可以到 [tonghuasun-agent](https://github.com/zhuyifang/tonghuasun-agent/issues) 项目反馈。
+
+## 可复现的行情性能测试
+
+仓库提供了[行情性能测试脚本](./docs/行情性能对比.md)，可以在同一台电脑和同一网络环境下，记录 FQGate、AKShare、easyquotation、mootdx 与 Tushare 执行常见 A 股行情快照查询时的成功状态、返回行数和耗时。
+
+脚本不会上传测试结果。JSON 测试记录保留脱敏后的原始异常，供复查测试过程；自动生成的 Markdown 报告只列出人需要判断的状态、完整性、耗时，以及错误类型和发生次数，不展示具体响应。结果不计算项目排名；不支持或需要额外权限的接口也会记录。
 
 ## 安全与责任说明
 
