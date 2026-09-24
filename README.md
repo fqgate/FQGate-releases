@@ -1,32 +1,49 @@
-# FQGate：同花顺 MCP 服务与本地行情数据网关（QQ群：14546787）
+<p align="center">
+  <img src="assets/brand/fqgate-logo.png" alt="FQGate 品牌标识" width="152">
+</p>
 
-FQGate（Fast Quant Gateway）是一款免费的 Windows、macOS 本地行情数据网关。它把同花顺行情连接给 Codex、Claude Code、WorkBuddy、豆包、千问等 AI 工具，让你在对话中查询行情、K 线、资讯和量化数据。
+<h1 align="center">FQGate Releases</h1>
+
+<p align="center">
+  FQGate 官方发行与下载仓库<br>
+  为 Windows 与 macOS 提供可校验的正式安装包和稳定版元数据
+</p>
+
+<p align="center">
+  <a href="https://github.com/fqgate/FQGate-releases/releases/latest"><img src="https://img.shields.io/github/v/release/fqgate/FQGate-releases?display_name=tag&sort=semver" alt="Latest Release"></a>
+  <a href="https://github.com/fqgate/FQGate-releases/actions"><img src="https://img.shields.io/github/actions/workflow/status/fqgate/FQGate-releases/ci.yml?label=release%20checks" alt="Release Checks"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-2563EB" alt="Windows and macOS">
+  <a href="https://gitee.com/qicuo/fqgate-releases"><img src="https://img.shields.io/badge/Gitee-国内镜像-C71D23" alt="Gitee 国内镜像"></a>
+</p>
+
+> FQGate 已启用专属 GitHub 组织 [fqgate](https://github.com/fqgate)。后续开源协作、正式发行和品牌建设均以该组织为长期入口。
+
+本仓库是 FQGate 的官方发行入口，负责保存正式安装包、稳定版清单、文件大小和 SHA-256 校验信息。这里不包含 FQGate 私有主源码，也不会要求你在配置文件中填写项目维护者的密钥。
+
+FQGate（Fast Quant Gateway）是一款免费的 Windows、macOS 本地行情数据网关。它把同花顺行情连接给 Codex、Claude Code、WorkBuddy、豆包、千问等 AI 工具，让你在对话中查询 A 股实时行情、K 线、资讯、选股和 Level-2 数据。
 
 > Tonghuashun (THS) market data MCP server and local market data API gateway for AI agents.
 
-**1.0.0 升级提醒：** 从本版开始，FQGate 专注行情，不再提供券商登录、交易账户查询、下单、撤单或资金划转的 API 和 MCP 工具。需要交易的用户，请通过券商客户端办理。
+## 项目入口
 
-FQGate 不需要 AI 模拟鼠标点击，也不依赖截图或文字识别读取结果。程序只在本机提供服务，并复用已经建立的登录和连接，适合个人量化研究、AI 股票工具和 A 股数据查询。
+| 项目 | 用途 | GitHub | 国内镜像 |
+| --- | --- | --- | --- |
+| FQGate Releases | 官方安装包、稳定版清单与校验信息 | [fqgate/FQGate-releases](https://github.com/fqgate/FQGate-releases) | [Gitee](https://gitee.com/qicuo/fqgate-releases) |
+| FQGate Agent | 开源技能、宿主适配、安装器、MCP Apps 与 SDK | [fqgate/FQGate-agent](https://github.com/fqgate/FQGate-agent) | [Gitee](https://gitee.com/qicuo/tonghuasun-agent) |
+| FQGate 组织 | 项目主页与后续开源项目 | [github.com/fqgate](https://github.com/fqgate) | — |
 
 ## FQGate 能做什么
 
-| 功能 | 你可以使用的能力 |
+| 能力 | 说明 |
 | --- | --- |
-| 行情数据 | 证券搜索、实时行情、历史行情、分时、K 线、盘口、板块、资讯、选股、期权和 Level-2 数据 |
+| 行情数据 | 证券搜索、A 股实时行情、历史行情、分时、K 线、盘口、板块、资讯、选股、期权和 Level-2 数据 |
 | 登录恢复 | 按需恢复已保存的同花顺账号或游客行情身份 |
-| MCP Apps | 查看已安装的行情界面及版本，界面可独立更新 |
-| AI 接入 | 提供标准 MCP、豆包兼容方式和 HTTP API，可由多个本机 AI 工具共用 |
+| MCP Apps | 查看已安装的行情界面及版本，界面可以独立更新 |
+| AI 接入 | 提供标准 MCP、豆包兼容方式和本机 HTTP API，可由多个 AI 工具共用 |
 
-普通行情在没有登录同花顺账号时可以自动使用游客行情。问财基础查询需要登录同花顺账号；Level-2 行情还要求账号已经开通相应权限。游客行情的数据可能延迟或受限。
+当前稳定版 FQGate 专注行情与资讯，不提供券商登录、交易账户查询、下单、撤单或资金划转 API。普通行情在没有登录同花顺账号时可以使用游客行情；问财基础查询需要登录同花顺账号；Level-2 数据还要求账号已经开通相应权限。游客行情的数据可能延迟或受限。
 
-## 支持哪些 AI 工具
-
-配套的开源 Agent 插件目前面向 Codex、Claude Code、WorkBuddy、豆包、千问、OpenClaw、ZCode 和 DeepSeek Harness。插件负责安装引导、AI 使用说明和对话中的交互界面，FQGate 负责你电脑上的行情服务。请将插件一起更新到 1.0.0，以采用不限制主程序高版本的兼容规则。
-
-- 国内访问：[Gitee - tonghuasun-agent](https://gitee.com/qicuo/tonghuasun-agent)
-- GitHub：[fqgate/FQGate-agent](https://github.com/fqgate/FQGate-agent)
-
-FQGate 主程序免费使用；配套 Agent 插件公开源代码。FQGate 主程序源码不在本仓库公开，本仓库只提供官方下载、版本信息和使用说明。
+FQGate 不需要 AI 模拟鼠标点击，也不依赖截图或文字识别读取结果。程序默认只在本机提供服务，并复用已经建立的登录和数据连接，适合个人量化研究、AI 股票工具和 A 股数据查询。
 
 ## 下载 FQGate
 
@@ -42,40 +59,60 @@ FQGate 主程序免费使用；配套 Agent 插件公开源代码。FQGate 主�
 
 ## 使用方法
 
-1. 下载并解压 Windows 安装包，运行 `FQGate.exe`。
-2. 首次启动时阅读并确认风险声明。
-3. 为 FQGate 创建桌面快捷方式，方便以后启动；需要完整行情权限时登录同花顺账号。
-4. 打开上方的 Agent 插件项目，按照对应 AI 工具的说明完成连接。FQGate 已启动、AI 工具中的 `fqgate` 连接成功，并且能够读取工具列表或完成健康检查，才算安装成功。
+1. 在上方正式发行页选择与你的操作系统和处理器架构匹配的安装包。
+2. 根据 [稳定版清单](./releases/stable.json)核对文件大小和 SHA-256，再解压并启动 FQGate。
+3. 首次启动时阅读并确认风险声明；需要完整行情权限时登录同花顺账号。
+4. 为 FQGate 创建桌面快捷方式，方便以后启动本机网关。
+5. 打开 [FQGate Agent](https://github.com/fqgate/FQGate-agent)，按照对应 AI 工具的说明完成连接。
+6. 确认 FQGate 已启动、AI 工具中的 `fqgate` 连接成功，并且能够读取工具列表或完成健康检查。
 
 FQGate 默认只监听本机地址，不会把服务直接开放到公网。程序重新启动后会优先恢复之前成功使用的同花顺账号或游客行情身份，凭证失效时才会重新登录或自动轮换游客账号。
 
-## 交流群
+## 平台与版本校验
+
+| 平台 | 架构 | 当前发行形式 |
+| --- | --- | --- |
+| Windows | x64 | ZIP 压缩包与单文件 EXE |
+| macOS | Apple Silicon / arm64 | ZIP 压缩包，ad-hoc 签名 |
+| macOS | Intel / x86_64 | ZIP 压缩包，ad-hoc 签名 |
+
+机器可读的当前稳定版信息保存在 [`releases/stable.json`](./releases/stable.json)。该扁平清单是 FQGate 1.x 自动升级到 2.0 的兼容入口；1.x 客户端以它核对 `version`、`fileName`、`size` 和 `sha256`。FQGate 2.0 客户端使用带 Ed25519 验签的 `releases/freshness.json` 通道，不通过猜测文件名或抓取页面文字判断最新版本。
+
+正式安装包只会发布在标签为 `fqgate-v<版本>` 的 GitHub Release 中。已经公开的 Release 不会被后续构建覆盖；不同平台的同一版本会汇总到同一个 Release，便于统一核验。
+
+## Agent 与开源范围
+
+配套的 [FQGate Agent](https://github.com/fqgate/FQGate-agent) 面向 Codex、Claude Code、WorkBuddy、豆包、千问、OpenClaw、ZCode 和 DeepSeek Harness，负责安装引导、AI 工具适配、技能与交互界面。
+
+FQGate Agent 的开源组件依据其仓库中的 AGPL-3.0-only 许可证发布。FQGate 主程序免费使用，但主源码不在本仓库公开；编译包适用随包许可。两个仓库的职责和许可边界相互独立。
+
+## 安全与隐私
+
+- 只从 [GitHub 官方发行页](https://github.com/fqgate/FQGate-releases/releases)或 [Gitee 国内镜像](https://gitee.com/qicuo/fqgate-releases/releases)下载安装包。
+- 安装前核对稳定版清单中的 SHA-256；校验失败时不要运行文件。
+- FQGate 默认监听本机地址，除非你清楚网络暴露带来的风险，否则不要自行转发到公网。
+- 项目维护者不会通过本仓库收集你的登录凭证、行情查询结果或本机配置。
+
+使用云端 AI 服务时，发送给该服务的对话和工具结果可能受其隐私政策与设置约束。请根据自己使用的 AI 工具判断可以提交的数据范围。
+
+## 交流与反馈
 
 - QQ 群：[免费 AI 量化数据](https://qm.qq.com/q/ZQSuiYQZ4Q)，群号：`14546787`
-- 微信群：使用微信扫描下方二维码，加入“同花顺 AI Agent 插件交流”群。
-
-<p align="center">
-  <img src="./assets/wechat-group.jpg" alt="同花顺 MCP、FQGate 和 AI 量化交易插件微信群二维码" width="260">
-</p>
-
-当前微信群二维码有效期至 2026 年 9 月 17 日。如果二维码已经失效，可以先加入 QQ 群，或到 Agent 插件项目提交 Issue 提醒更新。
+- FQGate 安装、启动或发行包问题：[本仓库 Issues](https://github.com/fqgate/FQGate-releases/issues)
+- AI 工具安装与插件问题：[FQGate Agent Issues](https://github.com/fqgate/FQGate-agent/issues)
 
 ## 支持项目
 
 <p align="center">
   <a href="./assets/support.png">
-    <img src="./assets/support.png" alt="支持免费的 FQGate 同花顺 MCP 与开源 AI 量化插件" width="100%">
+    <img src="./assets/support.png" alt="支持 FQGate 与开源 Agent 项目" width="100%">
   </a>
 </p>
 
-如果 FQGate 和开源 Agent 插件对你有帮助，欢迎自愿赞赏支持。赞赏不会解锁任何功能、数据权限、投资建议、问题处理优先级或后续服务承诺。
+如果 FQGate 和开源 Agent 项目对你有帮助，欢迎自愿赞赏支持。赞赏不会解锁任何功能、数据权限、投资建议、问题处理优先级或后续服务承诺。
 
-## 平台与更新
+## 责任说明
 
-当前提供 Windows x64、Apple 芯片 Mac 和 Intel 芯片 Mac 三种下载包。Windows 包未签名，macOS 包采用 ad-hoc 签名，首次运行时请按系统提示确认。
+FQGate 是数据连接与展示工具，不提供个股推荐、收益预测或投资建议。AI 生成的内容可能存在错误或延迟，行情及证券信息请以数据提供方、证券公司和交易所的正式记录为准。
 
-使用或更新 FQGate 时遇到问题，可以在本仓库提交 Issue；安装或使用 AI 插件时遇到问题，可以到 [FQGate-agent](https://github.com/fqgate/FQGate-agent/issues) 项目反馈。
-
-## 安全与责任说明
-
-FQGate 不提供投资建议，也不会替你判断交易是否合适。行情、网络、券商客户端和第三方服务可能延迟或异常；涉及真实账户的操作，请自行核对账户、证券代码、价格、数量和资金参数。
+这是一个由独立开发者维护的非官方项目，与同花顺及其关联公司不存在授权、合作或背书关系。FQGate 不会增加任何账号的数据权限，实际可用范围仍以相应账号及服务权限为准。
