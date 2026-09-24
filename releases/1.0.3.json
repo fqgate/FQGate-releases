@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.3",
-  "publishedAt": null,
+  "publishedAt": "2026-09-24T17:43:07Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "新增统一 MCP Apps 共享构建物加载与开发热更新支持。",
