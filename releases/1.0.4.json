@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.4",
-  "publishedAt": null,
+  "publishedAt": "2026-09-24T18:52:55Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "修复 MCP App 预览无法识别组件的问题",
