@@ -76,7 +76,7 @@ FQGate 默认只监听本机地址，不会把服务直接开放到公网。程�
 | macOS | Apple Silicon / arm64 | ZIP 压缩包，ad-hoc 签名 |
 | macOS | Intel / x86_64 | ZIP 压缩包，ad-hoc 签名 |
 
-机器可读的当前稳定版信息保存在 [`releases/stable.json`](./releases/stable.json)。该扁平清单是 FQGate 1.x 自动升级到 2.0 的兼容入口；1.x 客户端以它核对 `version`、`fileName`、`size` 和 `sha256`。FQGate 2.0 客户端使用带 Ed25519 验签的 `releases/freshness.json` 通道，不通过猜测文件名或抓取页面文字判断最新版本。
+机器可读的 1.x 当前稳定版信息保存在 [`releases/stable.json`](./releases/stable.json)，1.x 客户端以它核对 `version`、`fileName`、`size` 和 `sha256`。这个入口只属于 1.x，不会被 2.0 发布流程改写。FQGate 2.0 使用同一发行仓库下独立的 `releases/v2/freshness.json` 签名通道，两代产品的发布工作流、元数据合同和稳定入口彼此隔离。
 
 正式安装包只会发布在标签为 `fqgate-v<版本>` 的 GitHub Release 中。已经公开的 Release 不会被后续构建覆盖；不同平台的同一版本会汇总到同一个 Release，便于统一核验。
 
