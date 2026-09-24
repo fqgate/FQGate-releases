@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "component": "fqgate",
+  "channel": "stable",
+  "status": "unpublished",
+  "version": "1.0.4",
+  "publishedAt": null,
+  "minimumSupportedVersion": "0.1.0",
+  "releaseNotes": [
+    "修复 MCP App 预览无法识别组件的问题",
+    "为 MCP Resource 注入逻辑页面提示，保持共享静态构建物",
+    "补充组件识别兜底并完善 MCP UI 资源测试"
+  ],
+  "packages": [
+    {
+      "platform": "windows",
+      "architecture": "x86_64",
+      "installMode": "replaceExecutable",
+      "fileName": "FQGate-1.0.4-windows-x64-UNSIGNED.exe",
+      "size": 23201792,
+      "sha256": "6816b8e9225db3ffee464c8f61173eea02ae66663ba2b137e9aa39c4d6bc9290"
+    },
+    {
+      "platform": "macos",
+      "architecture": "aarch64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.4-macos-arm64-ADHOC.zip",
+      "size": 7491881,
+      "sha256": "e6fc8f1254ce45ccc5d5c7a70487e7a89adb169c5e962f38b1fefcf47357555b"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x86_64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.4-macos-x86_64-ADHOC.zip",
+      "size": 8085303,
+      "sha256": "9bc233711ecdd73dfa99c706e7d437fb053a46c494b36b4ae0b9a7f785eb59c1"
+    }
+  ]
+}
