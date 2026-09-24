@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "component": "fqgate",
+  "channel": "stable",
+  "status": "unpublished",
+  "version": "1.0.3",
+  "publishedAt": null,
+  "minimumSupportedVersion": "0.1.0",
+  "releaseNotes": [
+    "新增统一 MCP Apps 共享构建物加载与开发热更新支持。",
+    "修正 MCP UI 与 HTTP 预览共用同一份静态页面。"
+  ],
+  "packages": [
+    {
+      "platform": "windows",
+      "architecture": "x86_64",
+      "installMode": "replaceExecutable",
+      "fileName": "FQGate-1.0.3-windows-x64-UNSIGNED.exe",
+      "size": 23194112,
+      "sha256": "2744cec634a7c791a49ce7357345fe8828b3196a64311c7e57527237dae3219a"
+    },
+    {
+      "platform": "macos",
+      "architecture": "aarch64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.3-macos-arm64-ADHOC.zip",
+      "size": 7492760,
+      "sha256": "2a4d481e1e005f896ace18a4e0dfdf0fd270610b0825ea9d749897dbd23cbb65"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x86_64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.3-macos-x86_64-ADHOC.zip",
+      "size": 8073688,
+      "sha256": "6fe223d3a6ffbfcc2877aa2c49dceb12becc83494a87952cbd3345b4ac64b850"
+    }
+  ]
+}
