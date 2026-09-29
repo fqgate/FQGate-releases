@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "component": "fqgate",
+  "channel": "stable",
+  "status": "unpublished",
+  "version": "1.0.5",
+  "publishedAt": null,
+  "minimumSupportedVersion": "0.1.0",
+  "releaseNotes": [
+    "修复历史 K 线复权参数和日期范围校验",
+    "增强历史日 K 线线路选择与 OHLC 数据校验",
+    "新增自选股添加、删除和分组管理，支持指定分组",
+    "完善自选股与行情接口的 OpenAPI 示例和数据模型"
+  ],
+  "packages": [
+    {
+      "platform": "windows",
+      "architecture": "x86_64",
+      "installMode": "replaceExecutable",
+      "fileName": "FQGate-1.0.5-windows-x64-UNSIGNED.exe",
+      "size": 23707648,
+      "sha256": "2b9613dbf2d0f10b1672684f2e24ac8917d2d8d3fa9bd7fbbae04d57dd73d83c"
+    },
+    {
+      "platform": "macos",
+      "architecture": "aarch64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.5-macos-arm64-ADHOC.zip",
+      "size": 7572511,
+      "sha256": "1c70d027e94ce8d558f6d6a027ee92f3ad7deaa4d8bf14fdb811caad27208812"
+    },
+    {
+      "platform": "macos",
+      "architecture": "x86_64",
+      "installMode": "openPackage",
+      "fileName": "FQGate-1.0.5-macos-x86_64-ADHOC.zip",
+      "size": 8167600,
+      "sha256": "0fdb4455cd1cd27ffc623d27059699fe4d85249bca9cd25c123101dfd67a4c98"
+    }
+  ]
+}
