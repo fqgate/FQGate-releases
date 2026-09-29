@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "component": "fqgate",
   "channel": "stable",
-  "status": "unpublished",
+  "status": "published",
   "version": "1.0.5",
-  "publishedAt": null,
+  "publishedAt": "2026-09-29T16:31:18Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
     "修复历史 K 线复权参数和日期范围校验",

@@ -3,38 +3,39 @@
   "component": "fqgate",
   "channel": "stable",
   "status": "published",
-  "version": "1.0.4",
-  "publishedAt": "2026-09-24T18:52:55Z",
+  "version": "1.0.5",
+  "publishedAt": "2026-09-29T16:31:18Z",
   "minimumSupportedVersion": "0.1.0",
   "releaseNotes": [
-    "修复 MCP App 预览无法识别组件的问题",
-    "为 MCP Resource 注入逻辑页面提示，保持共享静态构建物",
-    "补充组件识别兜底并完善 MCP UI 资源测试"
+    "修复历史 K 线复权参数和日期范围校验",
+    "增强历史日 K 线线路选择与 OHLC 数据校验",
+    "新增自选股添加、删除和分组管理，支持指定分组",
+    "完善自选股与行情接口的 OpenAPI 示例和数据模型"
   ],
   "packages": [
     {
       "platform": "windows",
       "architecture": "x86_64",
       "installMode": "replaceExecutable",
-      "fileName": "FQGate-1.0.4-windows-x64-UNSIGNED.exe",
-      "size": 23201792,
-      "sha256": "6816b8e9225db3ffee464c8f61173eea02ae66663ba2b137e9aa39c4d6bc9290"
+      "fileName": "FQGate-1.0.5-windows-x64-UNSIGNED.exe",
+      "size": 23707648,
+      "sha256": "2b9613dbf2d0f10b1672684f2e24ac8917d2d8d3fa9bd7fbbae04d57dd73d83c"
     },
     {
       "platform": "macos",
       "architecture": "aarch64",
       "installMode": "openPackage",
-      "fileName": "FQGate-1.0.4-macos-arm64-ADHOC.zip",
-      "size": 7491881,
-      "sha256": "e6fc8f1254ce45ccc5d5c7a70487e7a89adb169c5e962f38b1fefcf47357555b"
+      "fileName": "FQGate-1.0.5-macos-arm64-ADHOC.zip",
+      "size": 7572511,
+      "sha256": "1c70d027e94ce8d558f6d6a027ee92f3ad7deaa4d8bf14fdb811caad27208812"
     },
     {
       "platform": "macos",
       "architecture": "x86_64",
       "installMode": "openPackage",
-      "fileName": "FQGate-1.0.4-macos-x86_64-ADHOC.zip",
-      "size": 8085303,
-      "sha256": "9bc233711ecdd73dfa99c706e7d437fb053a46c494b36b4ae0b9a7f785eb59c1"
+      "fileName": "FQGate-1.0.5-macos-x86_64-ADHOC.zip",
+      "size": 8167600,
+      "sha256": "0fdb4455cd1cd27ffc623d27059699fe4d85249bca9cd25c123101dfd67a4c98"
     }
   ]
 }
