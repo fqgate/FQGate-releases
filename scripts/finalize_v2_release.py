@@ -46,7 +46,6 @@ DEFAULT_GITHUB_REPOSITORY = "fqgate/FQGate-releases"
 DEFAULT_GITEE_REPOSITORY = "qicuo/fqgate-releases"
 RELEASE_SIGNING_KEY_ID = "update-release-signing-v1"
 FRESHNESS_SIGNING_KEY_ID = "update-freshness-signing-v1"
-RELEASE_LIFETIME_SECONDS = 30 * 24 * 60 * 60
 FRESHNESS_LIFETIME_SECONDS = 12 * 60 * 60
 V2_RELEASE_ROOT = "releases/v2"
 ROOT_FRESHNESS_PATH = f"{V2_RELEASE_ROOT}/freshness.json"
@@ -947,7 +946,6 @@ def build_release_payload(
         "sequence": sequence,
         "version": candidate["tag"].removeprefix("fqgate-v"),
         "publishedAt": published_at,
-        "expiresAt": published_at + RELEASE_LIFETIME_SECONDS,
         "releaseNotes": candidate["releaseNotes"],
         "artifacts": artifacts,
     }
@@ -1008,7 +1006,6 @@ def validate_release_payload(payload: dict) -> None:
         "sequence",
         "version",
         "publishedAt",
-        "expiresAt",
         "releaseNotes",
         "artifacts",
     }:
@@ -1020,8 +1017,6 @@ def validate_release_payload(payload: dict) -> None:
         or payload["sequence"] <= 0
         or parse_version(payload["version"]) < (0, 0, 0)
         or type(payload["publishedAt"]) is not int
-        or type(payload["expiresAt"]) is not int
-        or payload["publishedAt"] + RELEASE_LIFETIME_SECONDS != payload["expiresAt"]
         or not isinstance(payload["releaseNotes"], list)
         or not all(isinstance(note, str) and note for note in payload["releaseNotes"])
         or not isinstance(payload["artifacts"], list)
@@ -1320,7 +1315,6 @@ def finalize_release(
         "sequence": sequence,
         "refreshSequence": refresh_sequence,
         "publishedAt": published_at,
-        "expiresAt": published_at + RELEASE_LIFETIME_SECONDS,
     }
 
 

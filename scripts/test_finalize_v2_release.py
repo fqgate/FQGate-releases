@@ -13,7 +13,6 @@ from finalize_v2_release import (
     DEFAULT_GITHUB_REPOSITORY,
     FRESHNESS_LIFETIME_SECONDS,
     FRESHNESS_SIGNING_KEY_ID,
-    RELEASE_LIFETIME_SECONDS,
     RELEASE_SIGNING_KEY_ID,
     ROOT_FRESHNESS_PATH,
     V2_RELEASE_ROOT,
@@ -393,7 +392,7 @@ class FinalizeReleaseTests(unittest.TestCase):
             for item in candidate["packages"]
         }
         payload = build_release_payload(candidate, mirrored, 7, 1_700_000_000)
-        self.assertEqual(payload["expiresAt"], 1_700_000_000 + RELEASE_LIFETIME_SECONDS)
+        self.assertNotIn("expiresAt", payload)
         self.assertEqual(payload["sequence"], 7)
         self.assertEqual(len(payload["artifacts"]), 3)
         for artifact in payload["artifacts"]:
@@ -504,9 +503,7 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertEqual(active["stable"]["sequence"], 1)
         self.assertEqual(active["freshness"]["stablePath"], "1/stable.json")
         self.assertEqual(active["release"]["publishedAt"], 1_790_125_323)
-        self.assertEqual(
-            active["release"]["expiresAt"], 1_790_125_323 + RELEASE_LIFETIME_SECONDS
-        )
+        self.assertNotIn("expiresAt", active["release"])
         release_before = active["releaseBytes"]
         stable_before = active["stableBytes"]
         refresh = refresh_freshness(
