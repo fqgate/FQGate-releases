@@ -1,0 +1,97 @@
+name: 一次性恢复 FQGate 2.0 expiresAt
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 检出签名工具
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: 准备 Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13'
+      - name: 安装固定版本签名依赖
+        run: python3 -m pip install --disable-pip-version-check cryptography==50.0.1
+      - name: 仅恢复字段并重签引用链
+        env:
+          PYTHONPATH: scripts
+          EXPECTED_DOCUMENT_HASHES: '{"releases/v2/2.0.0/release.json":"a52dbfb981dbac2cd0b3273860329de2d249d4b01eac6c12ffae807362989860","releases/v2/2/stable.json":"dd9cc113114b4b48b08fc570d29c5a04dedb0424d33d9878658c38521b308b97","releases/v2/freshness.json":"ea8d7966bf25d558abbdbf8038eb2f04570b5c9b96058812b8151b53084230d4"}'
+          RELEASE_PRIVATE_KEY: ${{ secrets.FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY }}
+          FRESHNESS_PRIVATE_KEY: ${{ secrets.FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY }}
+          RELEASE_PUBLIC_KEY: ${{ vars.FQGATE_UPDATE_RELEASE_SIGNING_V1_PUBLIC_KEY }}
+          FRESHNESS_PUBLIC_KEY: ${{ vars.FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PUBLIC_KEY }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          from pathlib import Path
+
+          import finalize_v2_release as tools
+
+          def restore():
+              release_public = os.environ["RELEASE_PUBLIC_KEY"]
+              freshness_public = os.environ["FRESHNESS_PUBLIC_KEY"]
+              paths = ["releases/v2/2.0.0/release.json", "releases/v2/2/stable.json", "releases/v2/freshness.json"]
+              hashes = json.loads(os.environ["EXPECTED_DOCUMENT_HASHES"])
+              raw = [Path(path).read_bytes() for path in paths]
+              for path, document in zip(paths, raw):
+                  if tools.sha256_bytes(document) != hashes[path]:
+                      raise SystemExit("线上基线已改变，停止恢复")
+              release = tools.verify_document(raw[0], release_public, tools.RELEASE_SIGNING_KEY_ID)
+              stable = tools.verify_document(raw[1], release_public, tools.RELEASE_SIGNING_KEY_ID)
+              freshness = tools.verify_document(raw[2], freshness_public, tools.FRESHNESS_SIGNING_KEY_ID)
+              tools.validate_release_payload(release)
+              tools.validate_stable_payload(stable)
+              tools.validate_freshness_payload(freshness)
+              if release["version"] != "2.0.0" or release["sequence"] != 2 or "expiresAt" in release:
+                  raise SystemExit("不是待恢复的 2.0.0 文档")
+              if stable["sequence"] != 2 or stable["version"] != release["version"] or stable["releaseSha256"] != tools.sha256_bytes(raw[0]):
+                  raise SystemExit("stable 基线不一致")
+              if freshness["stablePath"] != "2/stable.json" or freshness["stableSha256"] != tools.sha256_bytes(raw[1]):
+                  raise SystemExit("freshness 基线不一致")
+              if release_public == freshness_public:
+                  raise SystemExit("签名公钥不得复用")
+              release_key = tools.load_signing_key(os.environ["RELEASE_PRIVATE_KEY"], release_public)
+              freshness_key = tools.load_signing_key(os.environ["FRESHNESS_PRIVATE_KEY"], freshness_public)
+              restored = {**release, "expiresAt": release["publishedAt"] + 30 * 24 * 60 * 60}
+              release_bytes = tools.sign_document(restored, release_key, tools.RELEASE_SIGNING_KEY_ID)
+              next_stable = {**stable, "releaseSha256": tools.sha256_bytes(release_bytes)}
+              stable_bytes = tools.sign_document(next_stable, release_key, tools.RELEASE_SIGNING_KEY_ID)
+              issued_at = max(int(time.time()), freshness["issuedAt"] + 1)
+              next_freshness = {
+                  **freshness,
+                  "refreshSequence": freshness["refreshSequence"] + 1,
+                  "issuedAt": issued_at,
+                  "expiresAt": issued_at + tools.FRESHNESS_LIFETIME_SECONDS,
+                  "stableSha256": tools.sha256_bytes(stable_bytes),
+              }
+              freshness_bytes = tools.sign_document(next_freshness, freshness_key, tools.FRESHNESS_SIGNING_KEY_ID)
+              tools.validate_stable_payload(next_stable)
+              tools.validate_freshness_payload(next_freshness)
+              for path, document, public, key_id in zip(paths, [release_bytes, stable_bytes, freshness_bytes],
+                  [release_public, release_public, freshness_public],
+                  [tools.RELEASE_SIGNING_KEY_ID, tools.RELEASE_SIGNING_KEY_ID, tools.FRESHNESS_SIGNING_KEY_ID]):
+                  tools.verify_document(document, public, key_id)
+                  target = Path("restored-channel") / path
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(document)
+              print(json.dumps({"version": "2.0.0", "expiresAt": restored["expiresAt"], "freshnessSequence": next_freshness["refreshSequence"]}))
+
+          if __name__ == "__main__":
+              restore()
+          PY
+      - name: 保存签名结果
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fqgate-v2-expires-at-restored
+          path: restored-channel
+          if-no-files-found: error
+          retention-days: 1
