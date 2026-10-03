@@ -536,6 +536,7 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertNotIn("schedule:", workflow)
         self.assertNotIn("refresh-freshness:", workflow)
         self.assertNotIn("finalize_v2_release.py refresh", workflow)
+        self.assertIn("environment: fqgate-production", workflow)
         self.assertIn("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY", workflow)
         self.assertIn("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY", workflow)
 
