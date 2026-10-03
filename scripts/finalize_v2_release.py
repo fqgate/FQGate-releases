@@ -47,6 +47,7 @@ RELEASE_SIGNING_KEY_ID = "update-release-signing-v1"
 FRESHNESS_SIGNING_KEY_ID = "update-freshness-signing-v1"
 V2_RELEASE_ROOT = "releases/v2"
 ROOT_FRESHNESS_PATH = f"{V2_RELEASE_ROOT}/freshness.json"
+GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS = 15 * 60
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
@@ -403,7 +404,9 @@ class GiteeApi:
             f"{release['id']}/attach_files"
         )
         connection = http.client.HTTPSConnection(
-            parsed.hostname, parsed.port, timeout=120
+            parsed.hostname,
+            parsed.port,
+            timeout=GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS,
         )
         connection.putrequest("POST", endpoint)
         connection.putheader("Authorization", f"Bearer {self.token}")

@@ -4,6 +4,7 @@ import json
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -12,6 +13,7 @@ from finalize_v2_release import (
     CURRENT_SOURCE_REPOSITORY,
     DEFAULT_GITHUB_REPOSITORY,
     FRESHNESS_SIGNING_KEY_ID,
+    GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS,
     GiteeApi,
     RELEASE_SIGNING_KEY_ID,
     ROOT_FRESHNESS_PATH,
@@ -541,6 +543,18 @@ class FinalizeReleaseTests(unittest.TestCase):
         api.write_content(ROOT_FRESHNESS_PATH, b"freshness", "write")
         self.assertEqual(calls[-1][0], "POST")
         self.assertNotIn("sha", calls[-1][2])
+
+    def test_gitee_asset_upload_allows_large_package_transfer(self):
+        api = GiteeApi("token")
+        with patch("finalize_v2_release.http.client.HTTPSConnection") as factory:
+            response = factory.return_value.getresponse.return_value
+            response.status = 201
+            response.read.return_value = b'{"id":1,"name":"package.zip"}'
+            api.upload_asset({"id": 20}, "package.zip", b"payload")
+        factory.assert_called_once_with(
+            "gitee.com", None, timeout=GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS
+        )
+        self.assertGreaterEqual(GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS, 10 * 60)
 
     def test_workflow_has_no_freshness_refresh_schedule(self):
         workflow = (
