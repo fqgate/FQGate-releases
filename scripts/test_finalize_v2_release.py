@@ -13,6 +13,7 @@ from finalize_v2_release import (
     CURRENT_SOURCE_REPOSITORY,
     DEFAULT_GITHUB_REPOSITORY,
     FRESHNESS_SIGNING_KEY_ID,
+    GITEE_ASSET_UPLOAD_CHUNK_BYTES,
     GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS,
     GiteeApi,
     RELEASE_SIGNING_KEY_ID,
@@ -550,11 +551,16 @@ class FinalizeReleaseTests(unittest.TestCase):
             response = factory.return_value.getresponse.return_value
             response.status = 201
             response.read.return_value = b'{"id":1,"name":"package.zip"}'
-            api.upload_asset({"id": 20}, "package.zip", b"payload")
+            content = b"x" * (GITEE_ASSET_UPLOAD_CHUNK_BYTES + 1)
+            api.upload_asset({"id": 20}, "package.zip", content)
         factory.assert_called_once_with(
             "gitee.com", None, timeout=GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS
         )
         self.assertGreaterEqual(GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS, 10 * 60)
+        sent = factory.return_value.send.call_args_list
+        self.assertEqual(len(sent), 4)
+        self.assertEqual(bytes(sent[1].args[0]), content[:GITEE_ASSET_UPLOAD_CHUNK_BYTES])
+        self.assertEqual(bytes(sent[2].args[0]), content[GITEE_ASSET_UPLOAD_CHUNK_BYTES:])
 
     def test_workflow_has_no_freshness_refresh_schedule(self):
         workflow = (

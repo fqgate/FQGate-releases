@@ -48,6 +48,7 @@ FRESHNESS_SIGNING_KEY_ID = "update-freshness-signing-v1"
 V2_RELEASE_ROOT = "releases/v2"
 ROOT_FRESHNESS_PATH = f"{V2_RELEASE_ROOT}/freshness.json"
 GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS = 15 * 60
+GITEE_ASSET_UPLOAD_CHUNK_BYTES = 1024 * 1024
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
@@ -410,6 +411,8 @@ class GiteeApi:
         )
         connection.putrequest("POST", endpoint)
         connection.putheader("Authorization", f"Bearer {self.token}")
+        connection.putheader("Accept", "application/json")
+        connection.putheader("User-Agent", "fqgate-release-finalizer")
         connection.putheader(
             "Content-Type", f"multipart/form-data; boundary={boundary}"
         )
@@ -417,9 +420,10 @@ class GiteeApi:
             "Content-Length", str(len(prefix) + len(content) + len(suffix))
         )
         connection.endheaders()
-        connection.send(prefix)
-        connection.send(content)
-        connection.send(suffix)
+        for payload in (prefix, content, suffix):
+            view = memoryview(payload)
+            for offset in range(0, len(view), GITEE_ASSET_UPLOAD_CHUNK_BYTES):
+                connection.send(view[offset : offset + GITEE_ASSET_UPLOAD_CHUNK_BYTES])
         response = connection.getresponse()
         payload = response.read()
         connection.close()
