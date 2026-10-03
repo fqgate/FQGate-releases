@@ -12,6 +12,7 @@ from finalize_v2_release import (
     CURRENT_SOURCE_REPOSITORY,
     DEFAULT_GITHUB_REPOSITORY,
     FRESHNESS_SIGNING_KEY_ID,
+    GiteeApi,
     RELEASE_SIGNING_KEY_ID,
     ROOT_FRESHNESS_PATH,
     V2_RELEASE_ROOT,
@@ -526,6 +527,20 @@ class FinalizeReleaseTests(unittest.TestCase):
         gitee.contents[ROOT_FRESHNESS_PATH] = b"two"
         with self.assertRaisesRegex(RuntimeError, "不一致"):
             read_active_state(github, gitee, self.release_public, self.freshness_public)
+
+    def test_gitee_directory_listing_means_file_is_missing(self):
+        api = GiteeApi("token")
+        calls = []
+
+        def request(method, path, fields=None, missing_ok=False):
+            calls.append((method, path, fields, missing_ok))
+            return [] if method == "GET" else {}
+
+        api.json_request = request
+        self.assertIsNone(api.read_content(ROOT_FRESHNESS_PATH))
+        api.write_content(ROOT_FRESHNESS_PATH, b"freshness", "write")
+        self.assertEqual(calls[-1][0], "POST")
+        self.assertNotIn("sha", calls[-1][2])
 
     def test_workflow_has_no_freshness_refresh_schedule(self):
         workflow = (

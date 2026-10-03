@@ -437,23 +437,41 @@ class GiteeApi:
             {**required, "prerelease": "true" if prerelease else "false"},
         )
 
+    @staticmethod
+    def content_file(value, path: str) -> dict | None:
+        # Gitee 对不存在的深层文件路径可能返回父目录列表，而不是 404。
+        if value is None or isinstance(value, list):
+            return None
+        if not isinstance(value, dict):
+            raise RuntimeError(f"Gitee 内容接口返回了无效文件对象：{path}")
+        return value
+
     def read_content(self, path: str) -> bytes | None:
         encoded_path = urllib.parse.quote(path, safe="/")
-        value = self.json_request(
-            "GET",
-            f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
-            missing_ok=True,
+        value = self.content_file(
+            self.json_request(
+                "GET",
+                f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
+                missing_ok=True,
+            ),
+            path,
         )
         if value is None:
             return None
-        return base64.b64decode(value["content"])
+        content = value.get("content")
+        if not isinstance(content, str):
+            raise RuntimeError(f"Gitee 文件缺少 Base64 内容：{path}")
+        return base64.b64decode(content)
 
     def write_content(self, path: str, content: bytes, message: str) -> None:
         encoded_path = urllib.parse.quote(path, safe="/")
-        current = self.json_request(
-            "GET",
-            f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
-            missing_ok=True,
+        current = self.content_file(
+            self.json_request(
+                "GET",
+                f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
+                missing_ok=True,
+            ),
+            path,
         )
         fields = {
             "message": message,
@@ -472,10 +490,13 @@ class GiteeApi:
 
     def delete_content(self, path: str, message: str) -> None:
         encoded_path = urllib.parse.quote(path, safe="/")
-        current = self.json_request(
-            "GET",
-            f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
-            missing_ok=True,
+        current = self.content_file(
+            self.json_request(
+                "GET",
+                f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
+                missing_ok=True,
+            ),
+            path,
         )
         if current:
             self.json_request(
