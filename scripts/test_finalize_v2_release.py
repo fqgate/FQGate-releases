@@ -26,6 +26,7 @@ from finalize_v2_release import (
     finalize_release,
     load_signing_key,
     read_active_state,
+    release_body,
     sign_document,
     switch_freshness,
     validate_platform_metadata,
@@ -167,6 +168,15 @@ class FinalizeReleaseTests(unittest.TestCase):
     def setUp(self):
         self.release_private, self.release_public = key_pair()
         self.freshness_private, self.freshness_public = key_pair()
+
+    def test_release_body_contains_only_user_facing_notes(self):
+        body = release_body({"releaseNotes": ["安装更方便。", "行情查询更稳定。"]})
+
+        self.assertEqual(
+            body,
+            "## 本次更新\n\n- 安装更方便。\n- 行情查询更稳定。",
+        )
+        self.assertNotIn("构建来源", body)
 
     def create_github(
         self,

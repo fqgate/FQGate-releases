@@ -817,7 +817,7 @@ def build_candidate(api, repository: str, version: str) -> dict:
 
 def release_body(candidate: dict) -> str:
     notes = "\n".join(f"- {note}" for note in candidate["releaseNotes"])
-    return f"## 本次更新\n\n{notes}\n\n构建来源：`{candidate['source']['commit']}`"
+    return f"## 本次更新\n\n{notes}"
 
 
 def asset_name(asset: dict) -> str:
