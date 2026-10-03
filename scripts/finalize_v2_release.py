@@ -1,4 +1,4 @@
-"""FQGate 2.0 双源正式发布与在线 freshness 维护。"""
+"""FQGate 2.0 双源正式发布与签名入口维护。"""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ import mimetypes
 import os
 import re
 import sys
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -46,7 +45,6 @@ DEFAULT_GITHUB_REPOSITORY = "fqgate/FQGate-releases"
 DEFAULT_GITEE_REPOSITORY = "qicuo/fqgate-releases"
 RELEASE_SIGNING_KEY_ID = "update-release-signing-v1"
 FRESHNESS_SIGNING_KEY_ID = "update-freshness-signing-v1"
-FRESHNESS_LIFETIME_SECONDS = 12 * 60 * 60
 V2_RELEASE_ROOT = "releases/v2"
 ROOT_FRESHNESS_PATH = f"{V2_RELEASE_ROOT}/freshness.json"
 
@@ -974,29 +972,31 @@ def validate_stable_payload(payload: dict) -> None:
 
 
 def validate_freshness_payload(payload: dict) -> None:
-    if set(payload) != {
+    required = {
         "schemaVersion",
         "channel",
         "refreshSequence",
-        "issuedAt",
-        "expiresAt",
         "stablePath",
         "stableSha256",
-    }:
+    }
+    legacy_time_fields = {"issuedAt", "expiresAt"}
+    if set(payload) not in {frozenset(required), frozenset(required | legacy_time_fields)}:
         raise ValueError("freshness 正文字段不符合约定")
     if (
         payload["schemaVersion"] != 1
         or payload["channel"] != "stable"
         or type(payload["refreshSequence"]) is not int
         or payload["refreshSequence"] <= 0
-        or type(payload["issuedAt"]) is not int
-        or type(payload["expiresAt"]) is not int
-        or payload["issuedAt"] >= payload["expiresAt"]
-        or payload["expiresAt"] - payload["issuedAt"] != FRESHNESS_LIFETIME_SECONDS
         or not re.fullmatch(r"[1-9]\d*/stable\.json", payload["stablePath"])
         or not re.fullmatch(r"[0-9a-f]{64}", payload["stableSha256"])
     ):
         raise ValueError("freshness 正文内容无效")
+    if legacy_time_fields <= set(payload) and (
+        type(payload["issuedAt"]) is not int
+        or type(payload["expiresAt"]) is not int
+        or payload["issuedAt"] >= payload["expiresAt"]
+    ):
+        raise ValueError("旧 freshness 时间字段内容无效")
 
 
 def validate_release_payload(payload: dict) -> None:
@@ -1224,7 +1224,6 @@ def finalize_release(
     freshness_private_key,
     release_public_key: str,
     freshness_public_key: str,
-    now: int | None = None,
 ) -> dict:
     candidate, contents = collect_candidate(github, github.repository, version)
     active = read_active_state(github, gitee, release_public_key, freshness_public_key)
@@ -1286,13 +1285,10 @@ def finalize_release(
         f"发布 FQGate 2.0 {version} 不可变 stable 文档",
     )
 
-    issued_at = int(time.time()) if now is None else now
     freshness_payload = {
         "schemaVersion": 1,
         "channel": "stable",
         "refreshSequence": refresh_sequence,
-        "issuedAt": issued_at,
-        "expiresAt": issued_at + FRESHNESS_LIFETIME_SECONDS,
         "stablePath": f"{sequence}/stable.json",
         "stableSha256": sha256_bytes(stable_bytes),
     }
@@ -1315,49 +1311,6 @@ def finalize_release(
         "sequence": sequence,
         "refreshSequence": refresh_sequence,
         "publishedAt": published_at,
-    }
-
-
-def refresh_freshness(
-    *,
-    github,
-    gitee,
-    freshness_private_key,
-    release_public_key: str,
-    freshness_public_key: str,
-    now: int | None = None,
-) -> dict:
-    active = read_active_state(github, gitee, release_public_key, freshness_public_key)
-    if active is None:
-        return {"status": "not_initialized"}
-    issued_at = int(time.time()) if now is None else now
-    payload = {
-        "schemaVersion": 1,
-        "channel": "stable",
-        "refreshSequence": active["freshness"]["refreshSequence"] + 1,
-        "issuedAt": issued_at,
-        "expiresAt": issued_at + FRESHNESS_LIFETIME_SECONDS,
-        "stablePath": active["freshness"]["stablePath"],
-        "stableSha256": active["freshness"]["stableSha256"],
-    }
-    content = sign_document(payload, freshness_private_key, FRESHNESS_SIGNING_KEY_ID)
-    validate_freshness_payload(
-        verify_document(content, freshness_public_key, FRESHNESS_SIGNING_KEY_ID)
-    )
-    switch_freshness(
-        github,
-        gitee,
-        content,
-        active["freshnessBytes"],
-        f"刷新 FQGate 2.0 在线证明 {payload['refreshSequence']}",
-    )
-    return {
-        "status": "refreshed",
-        "version": active["stable"]["version"],
-        "sequence": active["stable"]["sequence"],
-        "refreshSequence": payload["refreshSequence"],
-        "issuedAt": issued_at,
-        "expiresAt": payload["expiresAt"],
     }
 
 
@@ -1395,9 +1348,6 @@ def main(argv=None) -> int:
     finalize_parser.add_argument("--version", required=True)
     finalize_parser.add_argument("--output", type=Path, required=True)
 
-    refresh_parser = subparsers.add_parser("refresh")
-    refresh_parser.add_argument("--output", type=Path, required=True)
-
     args = parser.parse_args(argv)
     github = GitHubApi(required_environment("GITHUB_TOKEN"), args.github_repository)
     if args.command == "validate":
@@ -1413,38 +1363,25 @@ def main(argv=None) -> int:
     freshness_public_key = required_environment(
         "FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PUBLIC_KEY"
     )
-    if args.command == "finalize":
-        release_private_key = load_signing_key(
-            required_environment("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY"),
-            release_public_key,
-        )
-        freshness_private_key = load_signing_key(
-            required_environment("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY"),
-            freshness_public_key,
-        )
-        result = finalize_release(
-            github=github,
-            gitee=gitee,
-            version=args.version,
-            release_private_key=release_private_key,
-            freshness_private_key=freshness_private_key,
-            release_public_key=release_public_key,
-            freshness_public_key=freshness_public_key,
-        )
-    else:
-        freshness_private_key = load_signing_key(
-            required_environment("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY"),
-            freshness_public_key,
-        )
-        result = refresh_freshness(
-            github=github,
-            gitee=gitee,
-            freshness_private_key=freshness_private_key,
-            release_public_key=release_public_key,
-            freshness_public_key=freshness_public_key,
-        )
+    release_private_key = load_signing_key(
+        required_environment("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY"),
+        release_public_key,
+    )
+    freshness_private_key = load_signing_key(
+        required_environment("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY"),
+        freshness_public_key,
+    )
+    result = finalize_release(
+        github=github,
+        gitee=gitee,
+        version=args.version,
+        release_private_key=release_private_key,
+        freshness_private_key=freshness_private_key,
+        release_public_key=release_public_key,
+        freshness_public_key=freshness_public_key,
+    )
     write_json_file(args.output, result)
-    for name in ("version", "sequence", "refreshSequence", "expiresAt"):
+    for name in ("version", "sequence", "refreshSequence"):
         if name in result:
             write_github_output(name, str(result[name]))
     return 0

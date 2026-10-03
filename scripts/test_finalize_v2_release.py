@@ -11,7 +11,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from finalize_v2_release import (
     CURRENT_SOURCE_REPOSITORY,
     DEFAULT_GITHUB_REPOSITORY,
-    FRESHNESS_LIFETIME_SECONDS,
     FRESHNESS_SIGNING_KEY_ID,
     RELEASE_SIGNING_KEY_ID,
     ROOT_FRESHNESS_PATH,
@@ -23,10 +22,10 @@ from finalize_v2_release import (
     finalize_release,
     load_signing_key,
     read_active_state,
-    refresh_freshness,
     sign_document,
     switch_freshness,
     validate_platform_metadata,
+    validate_freshness_payload,
     validate_v2_version,
     validate_update_bundle_bytes,
     verify_document,
@@ -448,7 +447,6 @@ class FinalizeReleaseTests(unittest.TestCase):
                 freshness_private_key=self.freshness_private,
                 release_public_key=self.release_public,
                 freshness_public_key=self.freshness_public,
-                now=1_800_000_000,
             )
         self.assertTrue(github.release["draft"])
         self.assertTrue(gitee.release["prerelease"])
@@ -476,7 +474,7 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertIsNone(github.read_content(path))
         self.assertIsNone(gitee.read_content(path))
 
-    def test_finalize_and_refresh_preserve_immutable_documents(self):
+    def test_finalize_emits_timeless_freshness_and_preserves_immutable_documents(self):
         events = []
         github = self.create_github(events=events)
         gitee = FakeGitee(events)
@@ -488,7 +486,6 @@ class FinalizeReleaseTests(unittest.TestCase):
             freshness_private_key=self.freshness_private,
             release_public_key=self.release_public,
             freshness_public_key=self.freshness_public,
-            now=1_800_000_000,
         )
         self.assertEqual(result["status"], "published")
         self.assertEqual(events[-2:], ["gitee-publish", "github-publish"])
@@ -504,26 +501,23 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertEqual(active["freshness"]["stablePath"], "1/stable.json")
         self.assertEqual(active["release"]["publishedAt"], 1_790_125_323)
         self.assertNotIn("expiresAt", active["release"])
-        release_before = active["releaseBytes"]
-        stable_before = active["stableBytes"]
-        refresh = refresh_freshness(
-            github=github,
-            gitee=gitee,
-            freshness_private_key=self.freshness_private,
-            release_public_key=self.release_public,
-            freshness_public_key=self.freshness_public,
-            now=1_800_014_400,
+        self.assertNotIn("issuedAt", active["freshness"])
+        self.assertNotIn("expiresAt", active["freshness"])
+
+    def test_freshness_validation_has_no_independent_lifetime_limit(self):
+        payload = {
+            "schemaVersion": 1,
+            "channel": "stable",
+            "refreshSequence": 1,
+            "stablePath": "1/stable.json",
+            "stableSha256": "ab" * 32,
+        }
+        validate_freshness_payload(payload)
+        validate_freshness_payload(
+            {**payload, "issuedAt": 1_700_000_000, "expiresAt": 1_700_000_000 + 30 * 24 * 60 * 60}
         )
-        self.assertEqual(refresh["refreshSequence"], 2)
-        active_after = read_active_state(
-            github, gitee, self.release_public, self.freshness_public
-        )
-        self.assertEqual(active_after["releaseBytes"], release_before)
-        self.assertEqual(active_after["stableBytes"], stable_before)
-        self.assertEqual(
-            active_after["freshness"]["expiresAt"],
-            1_800_014_400 + FRESHNESS_LIFETIME_SECONDS,
-        )
+        with self.assertRaisesRegex(ValueError, "字段不符合约定"):
+            validate_freshness_payload({**payload, "issuedAt": 1_700_000_000})
 
     def test_cross_source_entry_mismatch_is_rejected(self):
         github = ContentChannel()
@@ -533,18 +527,17 @@ class FinalizeReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "不一致"):
             read_active_state(github, gitee, self.release_public, self.freshness_public)
 
-    def test_workflow_separates_secrets_and_schedules_four_hour_refresh(self):
+    def test_workflow_has_no_freshness_refresh_schedule(self):
         workflow = (
             Path(__file__).parents[1] / ".github/workflows/finalize-v2-release.yml"
         ).read_text(encoding="utf-8")
         self.assertIn("types: [fqgate-v2-draft-ready]", workflow)
         self.assertIn("scripts/finalize_v2_release.py", workflow)
-        self.assertIn("cron: '17 */4 * * *'", workflow)
+        self.assertNotIn("schedule:", workflow)
+        self.assertNotIn("refresh-freshness:", workflow)
+        self.assertNotIn("finalize_v2_release.py refresh", workflow)
         self.assertIn("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY", workflow)
         self.assertIn("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY", workflow)
-        refresh_job = workflow.split("refresh-freshness:", 1)[1]
-        self.assertNotIn("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY", refresh_job)
-        self.assertIn("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY", refresh_job)
 
 
 if __name__ == "__main__":
