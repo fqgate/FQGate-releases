@@ -15,6 +15,7 @@ from finalize_v2_release import (
     FRESHNESS_SIGNING_KEY_ID,
     GITEE_ASSET_UPLOAD_CHUNK_BYTES,
     GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS,
+    GitHubApi,
     GiteeApi,
     RELEASE_SIGNING_KEY_ID,
     ROOT_FRESHNESS_PATH,
@@ -26,6 +27,7 @@ from finalize_v2_release import (
     finalize_release,
     load_signing_key,
     read_active_state,
+    read_json_bytes,
     release_body,
     sign_document,
     switch_freshness,
@@ -55,6 +57,45 @@ class ContentChannel:
         self.contents = {}
         self.fail_write_once = set()
         self.writes = []
+        self.fail_after_write_once = set()
+        self.history = []
+
+    def checkpoint(self):
+        if not self.history or self.history[-1][1] != self.contents:
+            self.history.append((f"{len(self.history) + 1:040x}", dict(self.contents)))
+
+    def history_snapshots(self):
+        self.checkpoint()
+        return self.history[-1][0], [
+            (
+                commit,
+                {
+                    path: raw
+                    for path, raw in files.items()
+                    if path.startswith("releases/v2/")
+                },
+            )
+            for commit, files in self.history
+        ]
+
+    def current_head(self):
+        self.checkpoint()
+        return self.history[-1][0]
+
+    def history_anchor(self, anchor, head):
+        if self.current_head() != head or anchor not in {
+            commit for commit, _ in self.history
+        }:
+            raise RuntimeError("reservation 历史锚点不可达")
+
+    def compare_and_write(self, path, content, expected, message):
+        current = self.read_content(path)
+        if current == content:
+            return
+        if current != expected:
+            raise RuntimeError("前态已变化")
+        self.checkpoint()
+        self.write_content(path, content, message)
 
     def read_content(self, path):
         return self.contents.get(path)
@@ -65,9 +106,15 @@ class ContentChannel:
             raise RuntimeError(f"write failed: {path}")
         self.contents[path] = content
         self.writes.append((path, message))
+        self.checkpoint()
+        if path in self.fail_after_write_once:
+            self.fail_after_write_once.remove(path)
+            raise RuntimeError("response lost after commit")
 
     def delete_content(self, path, _message):
+        self.checkpoint()
         self.contents.pop(path, None)
+        self.checkpoint()
 
 
 class FakeGitHub(ContentChannel):
@@ -466,7 +513,7 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertTrue(gitee.release["prerelease"])
         self.assertEqual(events, [])
 
-    def test_freshness_switch_rolls_back_both_sources(self):
+    def test_freshness_switch_retains_target_and_resumes_forward(self):
         github = ContentChannel()
         gitee = ContentChannel()
         previous = b"old"
@@ -476,9 +523,12 @@ class FinalizeReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "write failed"):
             switch_freshness(github, gitee, b"new", previous, "test")
         self.assertEqual(github.read_content(ROOT_FRESHNESS_PATH), previous)
-        self.assertEqual(gitee.read_content(ROOT_FRESHNESS_PATH), previous)
+        self.assertEqual(gitee.read_content(ROOT_FRESHNESS_PATH), b"new")
+        switch_freshness(github, gitee, b"new", previous, "test")
+        self.assertEqual(github.read_content(ROOT_FRESHNESS_PATH), b"new")
+        self.assertEqual(gitee.read_content(ROOT_FRESHNESS_PATH), b"new")
 
-    def test_immutable_deploy_rolls_back_first_source(self):
+    def test_immutable_deploy_retains_first_source_and_resumes(self):
         github = ContentChannel()
         gitee = ContentChannel()
         path = f"{V2_RELEASE_ROOT}/2.0.0/release.json"
@@ -486,7 +536,9 @@ class FinalizeReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "write failed"):
             deploy_immutable(github, gitee, path, b"signed", "test")
         self.assertIsNone(github.read_content(path))
-        self.assertIsNone(gitee.read_content(path))
+        self.assertEqual(gitee.read_content(path), b"signed")
+        deploy_immutable(github, gitee, path, b"signed", "test")
+        self.assertEqual(github.read_content(path), b"signed")
 
     def test_finalize_emits_timeless_freshness_and_preserves_immutable_documents(self):
         events = []
@@ -501,7 +553,9 @@ class FinalizeReleaseTests(unittest.TestCase):
             release_public_key=self.release_public,
             freshness_public_key=self.freshness_public,
         )
-        self.assertEqual(result["status"], "published")
+        self.assertEqual(
+            result["status"], "metadata_activated_pending_runtime_acceptance"
+        )
         self.assertEqual(events[-2:], ["gitee-publish", "github-publish"])
         self.assertEqual(github.contents, gitee.contents)
         self.assertNotIn("releases/stable.json", github.contents)
@@ -528,7 +582,11 @@ class FinalizeReleaseTests(unittest.TestCase):
         }
         validate_freshness_payload(payload)
         validate_freshness_payload(
-            {**payload, "issuedAt": 1_700_000_000, "expiresAt": 1_700_000_000 + 30 * 24 * 60 * 60}
+            {
+                **payload,
+                "issuedAt": 1_700_000_000,
+                "expiresAt": 1_700_000_000 + 30 * 24 * 60 * 60,
+            }
         )
         with self.assertRaisesRegex(ValueError, "字段不符合约定"):
             validate_freshness_payload({**payload, "issuedAt": 1_700_000_000})
@@ -551,9 +609,29 @@ class FinalizeReleaseTests(unittest.TestCase):
 
         api.json_request = request
         self.assertIsNone(api.read_content(ROOT_FRESHNESS_PATH))
-        api.write_content(ROOT_FRESHNESS_PATH, b"freshness", "write")
+        api.compare_and_write(ROOT_FRESHNESS_PATH, b"freshness", None, "write")
         self.assertEqual(calls[-1][0], "POST")
         self.assertNotIn("sha", calls[-1][2])
+
+    def test_content_api_refuses_changed_precondition(self):
+        for api in (GitHubApi("token"), GiteeApi("token")):
+            with self.subTest(channel=type(api).__name__):
+                calls = []
+
+                def request(method, path, fields=None, missing_ok=False):
+                    calls.append(method)
+                    return {"content": "dGhpcmQ=", "sha": "third-sha"}
+
+                api.json_request = request
+                with self.assertRaisesRegex(RuntimeError, "前态已变化"):
+                    api.compare_and_write(
+                        ROOT_FRESHNESS_PATH, b"target", b"old", "前进"
+                    )
+                self.assertEqual(calls, ["GET"])
+
+    def test_json_duplicate_fields_are_rejected(self):
+        with self.assertRaisesRegex(ValueError, "重复 JSON"):
+            read_json_bytes(b'{"coreRunning":false,"coreRunning":true}', "验收")
 
     def test_gitee_asset_upload_allows_large_package_transfer(self):
         api = GiteeApi("token")
@@ -569,8 +647,12 @@ class FinalizeReleaseTests(unittest.TestCase):
         self.assertGreaterEqual(GITEE_ASSET_UPLOAD_TIMEOUT_SECONDS, 10 * 60)
         sent = factory.return_value.send.call_args_list
         self.assertEqual(len(sent), 4)
-        self.assertEqual(bytes(sent[1].args[0]), content[:GITEE_ASSET_UPLOAD_CHUNK_BYTES])
-        self.assertEqual(bytes(sent[2].args[0]), content[GITEE_ASSET_UPLOAD_CHUNK_BYTES:])
+        self.assertEqual(
+            bytes(sent[1].args[0]), content[:GITEE_ASSET_UPLOAD_CHUNK_BYTES]
+        )
+        self.assertEqual(
+            bytes(sent[2].args[0]), content[GITEE_ASSET_UPLOAD_CHUNK_BYTES:]
+        )
 
     def test_workflow_has_no_freshness_refresh_schedule(self):
         workflow = (

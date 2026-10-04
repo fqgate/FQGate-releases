@@ -52,7 +52,7 @@ GITEE_ASSET_UPLOAD_CHUNK_BYTES = 1024 * 1024
 
 
 def parse_version(value: str) -> tuple[int, int, int]:
-    match = SEMVER_PATTERN.fullmatch(value)
+    match = SEMVER_PATTERN.fullmatch(value) if isinstance(value, str) else None
     if not match:
         raise ValueError(f"版本号必须是严格语义版本：{value}")
     return tuple(int(part) for part in match.groups())
@@ -160,8 +160,23 @@ def verify_document(document: bytes, public_key: str, expected_key_id: str) -> d
 
 
 def read_json_bytes(value: bytes, label: str) -> dict:
+    def unique_keys(pairs):
+        result = {}
+        for key, item in pairs:
+            if key in result:
+                raise ValueError(f"{label} 包含重复 JSON 字段：{key}")
+            result[key] = item
+        return result
+
+    def reject_constant(_value):
+        raise ValueError(f"{label} 包含非标准 JSON 数字")
+
     try:
-        result = json.loads(value.decode("utf-8"))
+        result = json.loads(
+            value.decode("utf-8"),
+            object_pairs_hook=unique_keys,
+            parse_constant=reject_constant,
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError(f"{label} 不是有效的 UTF-8 JSON：{error}") from error
     if not isinstance(result, dict):
@@ -269,37 +284,47 @@ class GitHubApi:
             return None
         return base64.b64decode(value["content"])
 
-    def write_content(self, path: str, content: bytes, message: str) -> None:
+    def history_snapshots(self):
+        from v2_repository_history import history_snapshots
+
+        return history_snapshots(self, "github")
+
+    def current_head(self):
+        value = self.json_request("GET", f"/repos/{self.repository}/commits/main")
+        sha = value.get("sha") if isinstance(value, dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            raise RuntimeError("GitHub main 缺少精确 HEAD")
+        return sha
+
+    def history_anchor(self, anchor, head):
+        from v2_repository_history import assert_history_anchor
+
+        assert_history_anchor(self, "github", anchor, head)
+
+    def compare_and_write(
+        self, path: str, content: bytes, expected: bytes | None, message: str
+    ) -> None:
         encoded_path = urllib.parse.quote(path, safe="/")
         current = self.json_request(
             "GET",
             f"/repos/{self.repository}/contents/{encoded_path}?ref=main",
             missing_ok=True,
         )
+        actual = None if current is None else base64.b64decode(current["content"])
+        if actual == content:
+            return
+        if actual != expected:
+            raise RuntimeError(f"GitHub {path} 的前态已变化，拒绝覆盖")
         value = {
             "message": message,
             "branch": "main",
             "content": base64.b64encode(content).decode("ascii"),
         }
-        if current:
+        if current is not None:
             value["sha"] = current["sha"]
         self.json_request(
             "PUT", f"/repos/{self.repository}/contents/{encoded_path}", value
         )
-
-    def delete_content(self, path: str, message: str) -> None:
-        encoded_path = urllib.parse.quote(path, safe="/")
-        current = self.json_request(
-            "GET",
-            f"/repos/{self.repository}/contents/{encoded_path}?ref=main",
-            missing_ok=True,
-        )
-        if current:
-            self.json_request(
-                "DELETE",
-                f"/repos/{self.repository}/contents/{encoded_path}",
-                {"message": message, "branch": "main", "sha": current["sha"]},
-            )
 
 
 class GiteeApi:
@@ -470,7 +495,26 @@ class GiteeApi:
             raise RuntimeError(f"Gitee 文件缺少 Base64 内容：{path}")
         return base64.b64decode(content)
 
-    def write_content(self, path: str, content: bytes, message: str) -> None:
+    def history_snapshots(self):
+        from v2_repository_history import history_snapshots
+
+        return history_snapshots(self, "gitee")
+
+    def current_head(self):
+        value = self.json_request("GET", f"/repos/{self.repository}/commits/main")
+        sha = value.get("sha") if isinstance(value, dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            raise RuntimeError("Gitee main 缺少精确 HEAD")
+        return sha
+
+    def history_anchor(self, anchor, head):
+        from v2_repository_history import assert_history_anchor
+
+        assert_history_anchor(self, "gitee", anchor, head)
+
+    def compare_and_write(
+        self, path: str, content: bytes, expected: bytes | None, message: str
+    ) -> None:
         encoded_path = urllib.parse.quote(path, safe="/")
         current = self.content_file(
             self.json_request(
@@ -480,37 +524,23 @@ class GiteeApi:
             ),
             path,
         )
+        actual = None if current is None else base64.b64decode(current["content"])
+        if actual == content:
+            return
+        if actual != expected:
+            raise RuntimeError(f"Gitee {path} 的前态已变化，拒绝覆盖")
         fields = {
             "message": message,
             "branch": "main",
             "content": base64.b64encode(content).decode("ascii"),
         }
-        method = "POST"
-        if current:
-            method = "PUT"
+        if current is not None:
             fields["sha"] = current["sha"]
         self.json_request(
-            method,
+            "POST" if current is None else "PUT",
             f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}",
             fields,
         )
-
-    def delete_content(self, path: str, message: str) -> None:
-        encoded_path = urllib.parse.quote(path, safe="/")
-        current = self.content_file(
-            self.json_request(
-                "GET",
-                f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}?ref=main",
-                missing_ok=True,
-            ),
-            path,
-        )
-        if current:
-            self.json_request(
-                "DELETE",
-                f"/repos/{self.owner}/{self.repo}/contents/{encoded_path}",
-                {"message": message, "branch": "main", "sha": current["sha"]},
-            )
 
 
 def find_github_release(api, repository: str, tag: str) -> dict:
@@ -1008,7 +1038,10 @@ def validate_freshness_payload(payload: dict) -> None:
         "stableSha256",
     }
     legacy_time_fields = {"issuedAt", "expiresAt"}
-    if set(payload) not in {frozenset(required), frozenset(required | legacy_time_fields)}:
+    if set(payload) not in {
+        frozenset(required),
+        frozenset(required | legacy_time_fields),
+    }:
         raise ValueError("freshness 正文字段不符合约定")
     if (
         payload["schemaVersion"] != 1
@@ -1150,30 +1183,17 @@ def read_active_state(
     }
 
 
-def checked_write(channel, path: str, content: bytes, message: str) -> None:
-    channel.write_content(path, content, message)
+def checked_write(
+    channel, path: str, content: bytes, message: str, expected: bytes | None = None
+) -> None:
+    try:
+        channel.compare_and_write(path, content, expected, message)
+    except (OSError, RuntimeError):
+        # 超时不代表服务器未提交；只确认目标字节，不撤销已提交的内容。
+        if channel.read_content(path) != content:
+            raise
     if channel.read_content(path) != content:
         raise RuntimeError(f"发行通道写入后回读不一致：{path}")
-
-
-def restore_content(
-    channel,
-    path: str,
-    previous: bytes | None,
-    expected_current: bytes,
-    message: str,
-) -> None:
-    current = channel.read_content(path)
-    if current == previous:
-        return
-    if current != expected_current:
-        raise RuntimeError(f"{path} 回滚前已被其他操作修改，拒绝覆盖")
-    if previous is None:
-        channel.delete_content(path, message)
-    else:
-        channel.write_content(path, previous, message)
-    if channel.read_content(path) != previous:
-        raise RuntimeError(f"发行通道回滚后回读不一致：{path}")
 
 
 def deploy_immutable(github, gitee, path: str, content: bytes, message: str) -> None:
@@ -1181,30 +1201,9 @@ def deploy_immutable(github, gitee, path: str, content: bytes, message: str) -> 
     for name, value in previous.items():
         if value is not None and value != content:
             raise RuntimeError(f"{name} 已存在不同的不可变文档：{path}")
-    written = []
-    try:
-        for name, channel in (("gitee", gitee), ("github", github)):
-            if previous[name] is None:
-                written.append((name, channel))
-                checked_write(channel, path, content, message)
-    except Exception as error:
-        rollback_errors = []
-        for name, channel in reversed(written):
-            try:
-                restore_content(
-                    channel,
-                    path,
-                    None,
-                    content,
-                    f"回滚未完成的 {message}",
-                )
-            except Exception as rollback_error:
-                rollback_errors.append(f"{name}: {rollback_error}")
-        if rollback_errors:
-            raise RuntimeError(
-                f"{path} 部署失败且回滚不完整：{'; '.join(rollback_errors)}"
-            ) from error
-        raise
+    for name, channel in (("gitee", gitee), ("github", github)):
+        if previous[name] is None:
+            checked_write(channel, path, content, message)
 
 
 def switch_freshness(
@@ -1218,29 +1217,13 @@ def switch_freshness(
         "github": github.read_content(ROOT_FRESHNESS_PATH),
         "gitee": gitee.read_content(ROOT_FRESHNESS_PATH),
     }
-    if any(value != expected_previous for value in current.values()):
+    if any(value not in (expected_previous, content) for value in current.values()):
         raise RuntimeError("freshness 在发布期间发生变化，拒绝覆盖")
-    try:
-        checked_write(gitee, ROOT_FRESHNESS_PATH, content, message)
-        checked_write(github, ROOT_FRESHNESS_PATH, content, message)
-    except Exception as error:
-        rollback_errors = []
-        for name, channel in (("github", github), ("gitee", gitee)):
-            try:
-                restore_content(
-                    channel,
-                    ROOT_FRESHNESS_PATH,
-                    expected_previous,
-                    content,
-                    f"回滚未完成的 {message}",
-                )
-            except Exception as rollback_error:
-                rollback_errors.append(f"{name}: {rollback_error}")
-        if rollback_errors:
-            raise RuntimeError(
-                "freshness 切换失败且跨源回滚不完整：" + "; ".join(rollback_errors)
-            ) from error
-        raise
+    for name, channel in (("gitee", gitee), ("github", github)):
+        if current[name] != content:
+            checked_write(
+                channel, ROOT_FRESHNESS_PATH, content, message, expected_previous
+            )
 
 
 def finalize_release(
@@ -1253,93 +1236,17 @@ def finalize_release(
     release_public_key: str,
     freshness_public_key: str,
 ) -> dict:
-    candidate, contents = collect_candidate(github, github.repository, version)
-    active = read_active_state(github, gitee, release_public_key, freshness_public_key)
-    if active and active["stable"]["version"] == version:
-        return {
-            "status": "already_active",
-            "version": version,
-            "sequence": active["stable"]["sequence"],
-            "refreshSequence": active["freshness"]["refreshSequence"],
-        }
-    if active and parse_version(version) <= parse_version(active["stable"]["version"]):
-        raise ValueError(
-            f"新稳定版本 {version} 必须高于当前版本 {active['stable']['version']}"
-        )
-    sequence = 1 if active is None else active["stable"]["sequence"] + 1
-    refresh_sequence = (
-        1 if active is None else active["freshness"]["refreshSequence"] + 1
-    )
+    from v2_publication import finalize_publication
 
-    gitee_release, mirrored = mirror_to_gitee(gitee, candidate, contents)
-    github_release, _ = publish_release_pair(github, gitee, candidate, gitee_release)
-    published_at = parse_github_timestamp(github_release["published_at"])
-    release_payload = build_release_payload(candidate, mirrored, sequence, published_at)
-    release_bytes = sign_document(
-        release_payload, release_private_key, RELEASE_SIGNING_KEY_ID
+    return finalize_publication(
+        github=github,
+        gitee=gitee,
+        version=version,
+        release_private_key=release_private_key,
+        freshness_private_key=freshness_private_key,
+        release_public_key=release_public_key,
+        freshness_public_key=freshness_public_key,
     )
-    validate_release_payload(
-        verify_document(release_bytes, release_public_key, RELEASE_SIGNING_KEY_ID)
-    )
-    release_path = f"{V2_RELEASE_ROOT}/{version}/release.json"
-    deploy_immutable(
-        github,
-        gitee,
-        release_path,
-        release_bytes,
-        f"发布 FQGate 2.0 {version} 不可变 release 文档",
-    )
-
-    stable_payload = {
-        "schemaVersion": 1,
-        "channel": "stable",
-        "sequence": sequence,
-        "version": version,
-        "releasePath": f"{version}/release.json",
-        "releaseSha256": sha256_bytes(release_bytes),
-    }
-    stable_bytes = sign_document(
-        stable_payload, release_private_key, RELEASE_SIGNING_KEY_ID
-    )
-    validate_stable_payload(
-        verify_document(stable_bytes, release_public_key, RELEASE_SIGNING_KEY_ID)
-    )
-    stable_path = f"{V2_RELEASE_ROOT}/{sequence}/stable.json"
-    deploy_immutable(
-        github,
-        gitee,
-        stable_path,
-        stable_bytes,
-        f"发布 FQGate 2.0 {version} 不可变 stable 文档",
-    )
-
-    freshness_payload = {
-        "schemaVersion": 1,
-        "channel": "stable",
-        "refreshSequence": refresh_sequence,
-        "stablePath": f"{sequence}/stable.json",
-        "stableSha256": sha256_bytes(stable_bytes),
-    }
-    freshness_bytes = sign_document(
-        freshness_payload, freshness_private_key, FRESHNESS_SIGNING_KEY_ID
-    )
-    validate_freshness_payload(
-        verify_document(freshness_bytes, freshness_public_key, FRESHNESS_SIGNING_KEY_ID)
-    )
-    switch_freshness(
-        github,
-        gitee,
-        freshness_bytes,
-        None if active is None else active["freshnessBytes"],
-        f"切换 FQGate 2.0 {version} 在线发行入口",
-    )
-    return {
-        "status": "published",
-        "version": version,
-        "sequence": sequence,
-        "refreshSequence": refresh_sequence,
-        "publishedAt": published_at,
-    }
 
 
 def required_environment(name: str) -> str:
@@ -1376,6 +1283,15 @@ def main(argv=None) -> int:
     finalize_parser.add_argument("--version", required=True)
     finalize_parser.add_argument("--output", type=Path, required=True)
 
+    audit_parser = subparsers.add_parser("audit")
+    audit_parser.add_argument("--version", required=True)
+    audit_parser.add_argument("--output", type=Path, required=True)
+
+    accept_parser = subparsers.add_parser("accept")
+    accept_parser.add_argument("--version", required=True)
+    accept_parser.add_argument("--report", type=Path, required=True)
+    accept_parser.add_argument("--output", type=Path, required=True)
+
     args = parser.parse_args(argv)
     github = GitHubApi(required_environment("GITHUB_TOKEN"), args.github_repository)
     if args.command == "validate":
@@ -1391,23 +1307,72 @@ def main(argv=None) -> int:
     freshness_public_key = required_environment(
         "FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PUBLIC_KEY"
     )
+    if args.command == "audit":
+        from v2_publication import inspect_publication
+
+        try:
+            result = inspect_publication(
+                github=github,
+                gitee=gitee,
+                version=args.version,
+                release_public_key=release_public_key,
+                freshness_public_key=freshness_public_key,
+            )
+        except (OSError, ValueError, RuntimeError) as error:
+            write_json_file(
+                args.output,
+                {
+                    "status": "audit_failed",
+                    "version": args.version,
+                    "error": str(error),
+                },
+            )
+            raise
+        write_json_file(args.output, result)
+        return 1 if result["status"] == "blocked" else 0
     release_private_key = load_signing_key(
         required_environment("FQGATE_UPDATE_RELEASE_SIGNING_V1_PRIVATE_KEY"),
         release_public_key,
     )
-    freshness_private_key = load_signing_key(
-        required_environment("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY"),
-        freshness_public_key,
-    )
-    result = finalize_release(
-        github=github,
-        gitee=gitee,
-        version=args.version,
-        release_private_key=release_private_key,
-        freshness_private_key=freshness_private_key,
-        release_public_key=release_public_key,
-        freshness_public_key=freshness_public_key,
-    )
+    try:
+        if args.command == "accept":
+            from v2_publication import accept_publication
+
+            report = read_json_bytes(args.report.read_bytes(), "运行验收报告")
+            result = accept_publication(
+                github=github,
+                gitee=gitee,
+                version=args.version,
+                report=report,
+                release_private_key=release_private_key,
+                release_public_key=release_public_key,
+                freshness_public_key=freshness_public_key,
+            )
+        else:
+            freshness_private_key = load_signing_key(
+                required_environment("FQGATE_UPDATE_FRESHNESS_SIGNING_V1_PRIVATE_KEY"),
+                freshness_public_key,
+            )
+            result = finalize_release(
+                github=github,
+                gitee=gitee,
+                version=args.version,
+                release_private_key=release_private_key,
+                freshness_private_key=freshness_private_key,
+                release_public_key=release_public_key,
+                freshness_public_key=freshness_public_key,
+            )
+    except (OSError, ValueError, RuntimeError) as error:
+        write_json_file(
+            args.output,
+            {
+                "status": "failed_preserving_remote_state",
+                "version": args.version,
+                "command": args.command,
+                "error": str(error),
+            },
+        )
+        raise
     write_json_file(args.output, result)
     for name in ("version", "sequence", "refreshSequence"):
         if name in result:

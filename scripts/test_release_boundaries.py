@@ -49,6 +49,27 @@ class ReleaseBoundaryTests(unittest.TestCase):
         )
         self.assertFalse(hasattr(finalize_v2_release, "ROOT_STABLE_ALIAS_PATH"))
 
+    def test_v2_workflow_and_documentation_describe_forward_only_acceptance(self):
+        workflow = (
+            self.repository_root / ".github/workflows/finalize-v2-release.yml"
+        ).read_text(encoding="utf-8")
+        maintenance = (self.repository_root / "发布维护.md").read_text(encoding="utf-8")
+        self.assertIn("finalize_v2_release.py audit", workflow)
+        self.assertIn("if: always()", workflow)
+        self.assertIn("group: fqgate-v2-stable-channel", workflow)
+        self.assertIn("metadata_activated_pending_runtime_acceptance", maintenance)
+        self.assertIn("finalize_v2_release.py accept", maintenance)
+        for document in (workflow, maintenance):
+            self.assertNotIn("事务切换", document)
+            self.assertNotIn("原子切换", document)
+            self.assertNotIn("12 小时", document)
+            self.assertNotIn("每 4 小时", document)
+
+    def test_v2_metadata_cannot_be_deleted_by_publisher(self):
+        self.assertFalse(hasattr(finalize_v2_release, "restore_content"))
+        self.assertFalse(hasattr(finalize_v2_release.GitHubApi, "delete_content"))
+        self.assertFalse(hasattr(finalize_v2_release.GiteeApi, "delete_content"))
+
 
 if __name__ == "__main__":
     unittest.main()
